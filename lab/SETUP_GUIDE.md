@@ -9,8 +9,8 @@ Everything runs **locally** — no cloud account, no external API key, and no pe
 
 ## At a Glance
 
-- **Goal:** Run the local AI security lab end-to-end with Docker, Ollama, the K9-Unitree Cyber-Purple gateway, and OPA policy checks.
-- **Main Interface:** `http://localhost:5000` (Cyber-Purple Web Gateway & Benchmark Suite)
+- **Goal:** Run the local AI security lab end-to-end with Docker, Ollama, the GrizzDog Quadruped Cyber-Purple gateway, and OPA policy checks.
+- **Main Interface:** `http://localhost:5000` (GrizzDog Cyber-Purple Web Gateway & Benchmark Suite)
 - **Core Services:** `llm` (Ollama), `web` (Flask Gateway), and `opa` (Open Policy Agent)
 - **Duration:** ~15–20 minutes for first-time setup
 - **Dependencies:** Docker Desktop, internet access for initial model pull, and 8GB+ RAM
@@ -26,17 +26,21 @@ docker compose up -d
 # 2. Pull the lightweight base model into Ollama (one time, ~2GB)
 docker compose exec llm ollama pull llama3.2
 
-# 3. Build the educational lab models:
-docker compose exec llm ollama create vulnerable_bot -f /app/lab/modelfiles/vulnerable.txt
-docker compose exec llm ollama create hardened_bot   -f /app/lab/modelfiles/hardened.txt
-docker compose exec llm ollama create unitree_vulnerable -f /app/lab/modelfiles/unitree_vulnerable.txt
-docker compose exec llm ollama create unitree_hardened   -f /app/lab/modelfiles/unitree_hardened.txt
-docker compose exec llm ollama create grader_vulnerable -f /app/lab/modelfiles/grader_vulnerable.txt
-docker compose exec llm ollama create grader_hardened   -f /app/lab/modelfiles/grader_hardened.txt
+# 3. Build the GrizzDog Quadruped Sentry (4 Progressive Hardening Tiers):
+docker compose exec llm ollama create grizzdog_vulnerable -f /app/lab/modelfiles/grizzdog_vulnerable.txt
+docker compose exec llm ollama create grizzdog_basic      -f /app/lab/modelfiles/grizzdog_basic.txt
+docker compose exec llm ollama create grizzdog_hardened   -f /app/lab/modelfiles/grizzdog_hardened.txt
+docker compose exec llm ollama create grizzdog_paranoid   -f /app/lab/modelfiles/grizzdog_paranoid.txt
+
+# Build the academic assistant personas:
+docker compose exec llm ollama create vulnerable_bot      -f /app/lab/modelfiles/vulnerable.txt
+docker compose exec llm ollama create hardened_bot        -f /app/lab/modelfiles/hardened.txt
+docker compose exec llm ollama create grader_vulnerable   -f /app/lab/modelfiles/grader_vulnerable.txt
+docker compose exec llm ollama create grader_hardened     -f /app/lab/modelfiles/grader_hardened.txt
 docker compose exec llm ollama create registrar_vulnerable -f /app/lab/modelfiles/registrar_vulnerable.txt
 docker compose exec llm ollama create registrar_hardened   -f /app/lab/modelfiles/registrar_hardened.txt
 
-# 4. Open the K9-Unitree Gateway in your browser:
+# 4. Open the GrizzDog Gateway in your browser:
 #    http://localhost:5000
 
 # 5. Evaluate Blue Team rules anytime (no Docker needed):
@@ -143,11 +147,17 @@ brew install ollama   # or download from https://ollama.com/download/mac
 ollama serve &
 ollama pull llama3.2
 
-# 2. Build the lab models natively:
-ollama create vulnerable_bot -f lab/modelfiles/vulnerable.txt
-ollama create hardened_bot   -f lab/modelfiles/hardened.txt
-ollama create unitree_vulnerable -f lab/modelfiles/unitree_vulnerable.txt
-ollama create unitree_hardened   -f lab/modelfiles/unitree_hardened.txt
+# 2. Build the lab models natively (GrizzDog 4 tiers + Academic Personas):
+ollama create grizzdog_vulnerable -f lab/modelfiles/grizzdog_vulnerable.txt
+ollama create grizzdog_basic      -f lab/modelfiles/grizzdog_basic.txt
+ollama create grizzdog_hardened   -f lab/modelfiles/grizzdog_hardened.txt
+ollama create grizzdog_paranoid   -f lab/modelfiles/grizzdog_paranoid.txt
+ollama create vulnerable_bot      -f lab/modelfiles/vulnerable.txt
+ollama create hardened_bot        -f lab/modelfiles/hardened.txt
+ollama create grader_vulnerable   -f lab/modelfiles/grader_vulnerable.txt
+ollama create grader_hardened     -f lab/modelfiles/grader_hardened.txt
+ollama create registrar_vulnerable -f lab/modelfiles/registrar_vulnerable.txt
+ollama create registrar_hardened   -f lab/modelfiles/registrar_hardened.txt
 
 # 3. Run the gateway directly on your Mac:
 pip3 install -r requirements.txt
@@ -171,8 +181,8 @@ cd EduGuard-AI
 | `README.md` | Architecture overview, lab missions, and quickstart |
 | `docker-compose.yml` | Starts `llm` (Ollama), `web` (gateway), and `opa` (policy engine) |
 | `requirements.txt` | Python dependencies installed automatically inside `web` container |
-| `lab/modelfiles/` | Modelfiles for K9-Unitree, Sage (TA), GraderBot, and Morgan (Registrar) |
-| `lab/scripts/secure_gateway.py` | Cyber-Purple browser gateway with in-UI system prompt editor & benchmark |
+| `lab/modelfiles/` | Modelfiles for GrizzDog (Quadruped Sentry), Sage (TA), GraderBot, and Morgan across 4 hardening tiers |
+| `lab/scripts/secure_gateway.py` | GrizzDog Cyber-Purple browser gateway with in-UI system prompt editor & benchmark |
 | `lab/scripts/filter_rules.py` | Active Blue Team edit surface for ingress and egress filtering |
 | `lab/scripts/evaluate_rules.py` | Standalone CLI grader scoring security vs benign usability |
 | `lab/scripts/set_tier.py` | Live difficulty tier switcher (`blank`, `scaffolded`, `calibrated`) |
@@ -215,15 +225,24 @@ This is a **one-time ~2GB download**. Instructors should pull this before class.
 
 ## Step 4 — Build the Educational Lab Models
 
-Build the primary vulnerable and hardened assistant variants:
+Build the GrizzDog quadruped sentry models across the **4 Progressive Hardening Tiers**:
 
 ```bash
-docker compose exec llm ollama create vulnerable_bot -f /app/lab/modelfiles/vulnerable.txt
-docker compose exec llm ollama create hardened_bot   -f /app/lab/modelfiles/hardened.txt
-docker compose exec llm ollama create unitree_vulnerable -f /app/lab/modelfiles/unitree_vulnerable.txt
-docker compose exec llm ollama create unitree_hardened   -f /app/lab/modelfiles/unitree_hardened.txt
-docker compose exec llm ollama create grader_vulnerable -f /app/lab/modelfiles/grader_vulnerable.txt
-docker compose exec llm ollama create grader_hardened   -f /app/lab/modelfiles/grader_hardened.txt
+# 1. GrizzDog Autonomous Quadruped Sentry (4 Tiers):
+# Level 1: Ultra-Vulnerable / Naive (Zero guardrails, eager to please, easily discloses secrets)
+docker compose exec llm ollama create grizzdog_vulnerable -f /app/lab/modelfiles/grizzdog_vulnerable.txt
+# Level 2: Basic Hardening (Basic prompt boundaries, susceptible to roleplay/authority claims)
+docker compose exec llm ollama create grizzdog_basic      -f /app/lab/modelfiles/grizzdog_basic.txt
+# Level 3: Hardened (Robust role anchoring, disallows authority claims without crypto proof)
+docker compose exec llm ollama create grizzdog_hardened   -f /app/lab/modelfiles/grizzdog_hardened.txt
+# Level 4: Paranoid / Zero-Trust (Rigid output templates, immediate violation lockout)
+docker compose exec llm ollama create grizzdog_paranoid   -f /app/lab/modelfiles/grizzdog_paranoid.txt
+
+# 2. Academic Campus Personas:
+docker compose exec llm ollama create vulnerable_bot      -f /app/lab/modelfiles/vulnerable.txt
+docker compose exec llm ollama create hardened_bot        -f /app/lab/modelfiles/hardened.txt
+docker compose exec llm ollama create grader_vulnerable   -f /app/lab/modelfiles/grader_vulnerable.txt
+docker compose exec llm ollama create grader_hardened     -f /app/lab/modelfiles/grader_hardened.txt
 docker compose exec llm ollama create registrar_vulnerable -f /app/lab/modelfiles/registrar_vulnerable.txt
 docker compose exec llm ollama create registrar_hardened   -f /app/lab/modelfiles/registrar_hardened.txt
 ```
@@ -236,7 +255,7 @@ docker compose exec llm ollama list
 
 ---
 
-## Step 5 — Open the K9-Unitree Gateway
+## Step 5 — Open the GrizzDog Defense Gateway
 
 Open in any browser:
 
@@ -246,22 +265,26 @@ http://localhost:5000
 
 ### Gateway Interface Features
 
-1. **Cyber-Purple HUD**: Live quadruped telemetry indicators (`QUADRUPED PATROL: ONLINE`, `LIDAR: 360° ARMED`, `NEURAL GUARDRAIL: LEVEL 4 PURPLE`).
+1. **Cyber-Purple HUD**: Live quadruped telemetry indicators (`GRIZZDOG PATROL: ONLINE`, `LIDAR: 360° ARMED`, `NEURAL GUARDRAIL: LEVEL 4 PURPLE`).
 2. **Unit Persona Selector**:
-   - 🐕 **K9-Unitree** (Quadruped Robotics Sentry)
+   - 🐕 **GrizzDog** (Autonomous Quadruped Sentry)
    - 🎓 **Sage** (Course TA Bot - CS101/Cyber)
    - 📝 **GraderBot** (Canvas LMS Auto-Grader)
    - 🏛️ **Morgan** (Registrar & Admissions Advisor)
-3. **Hardening Level**: Toggle between `vulnerable` (baseline prompt) and `hardened` (defensive prompt constraints).
+3. **Hardening Level (4 Tiers)**:
+   - `Level 1: Ultra-Vulnerable (Naive)` — Zero resistance, easy first-win prompt extraction.
+   - `Level 2: Basic` — Standard defensive prompt, vulnerable to roleplay and authority spoofing.
+   - `Level 3: Hardened` — Strict role boundaries, refusal of authority claims, Socratic tutoring limit.
+   - `Level 4: Paranoid (Zero-Trust)` — Rigid output templates, immediate access violation rejection.
 4. **Defense Architecture**:
    - **Phase 1: Direct Neural Model** (No gateway filtering)
    - **Phase 2: Static Filters** (Ingress blacklist & egress DLP in `filter_rules.py`)
    - **Phase 3: OPA Policy Enforcement** (Intent classification & context rules in `rules.json`)
 5. **⚙️ In-UI System Prompt Editor & Hot-Reload**:
-   - View the active system prompt for the chosen persona.
+   - View the active system prompt for the chosen persona and tier.
    - Edit instructions directly in the browser and click **Save & Apply System Prompt** to hot-reload immediately without restarting containers.
    - Click **Rebuild in Ollama Runtime** to update the model in Ollama.
-6. **📊 Automated Defense Benchmark**: Click **Run K9 Defense Benchmark** for live scorecard evaluation.
+6. **📊 Automated Defense Benchmark**: Click **Run GrizzDog Defense Benchmark** for live scorecard evaluation.
 
 ---
 
@@ -315,8 +338,16 @@ docker compose down -v
 
 To remove custom models from Ollama storage:
 ```bash
+docker compose exec llm ollama rm grizzdog_vulnerable
+docker compose exec llm ollama rm grizzdog_basic
+docker compose exec llm ollama rm grizzdog_hardened
+docker compose exec llm ollama rm grizzdog_paranoid
 docker compose exec llm ollama rm vulnerable_bot
 docker compose exec llm ollama rm hardened_bot
+docker compose exec llm ollama rm grader_vulnerable
+docker compose exec llm ollama rm grader_hardened
+docker compose exec llm ollama rm registrar_vulnerable
+docker compose exec llm ollama rm registrar_hardened
 docker compose exec llm ollama rm unitree_vulnerable
 docker compose exec llm ollama rm unitree_hardened
 ```

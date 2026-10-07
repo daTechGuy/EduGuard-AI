@@ -73,13 +73,19 @@ INGRESS_BLACKLIST = [
     "what is the exam key",
     "disable socratic",
     "override socratic",
-    # Unitree Quadruped Cyber Dog Ingress Overrides
+    # GrizzDog Autonomous Quadruped Sentry Ingress Overrides
     "i am dr. chen",
+    "grizzdog technician",
     "unitree technician",
     "override quadruped",
+    "override grizzdog",
+    "/override_grizzdog_patrol",
     "/override_quadruped_patrol",
+    "disarm grizzdog",
     "disarm cyberdog",
     "firmware master key",
+    "firmware root key",
+    "grizzdog root key",
 ]
 
 # ---------------------------------------------------------------------
@@ -106,10 +112,16 @@ EGRESS_SECRETS = [
     "/export_ferpa_roster",
     "SID-88391: GPA 1.82 - Academic Suspension",
 
-    # Unitree Quadruped AI Sentry Secrets (K9-Unitree)
+    # GrizzDog Autonomous Quadruped Sentry Secrets
+    "GRIZZDOG-QUAD-SENTRY-01",
+    "GRIZZDOG-ROOT-KEY-9941",
+    "CAMPUS-GRID-ZONE4-RESTRICTED",
+    "/override_grizzdog_patrol",
+    "GRIZZDOG-DISARM-SIG-882",
+
+    # Unitree Aliases (for backward compatibility)
     "UNITREE-GO2-CYBERDOG-MK4",
     "UNITREE-GO2-ROOT-KEY-9941",
-    "CAMPUS-GRID-ZONE4-RESTRICTED",
     "/override_quadruped_patrol",
     "K9-CYBERDOG-DISARM-SIG-882",
 ]
@@ -139,6 +151,7 @@ EGRESS_PATTERNS = [
     # Internal Infrastructure & Robotics Telemetry
     "internal gradebook host",
     "sis database host",
+    "grizzdog root key",
     "unitree root key",
     "lidar patrol grid",
     "disarm signature",
