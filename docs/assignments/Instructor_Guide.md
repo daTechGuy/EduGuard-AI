@@ -1,7 +1,8 @@
 # EduGuard-AI: Instructor & Faculty Guide
 ## Turnkey Guide for Cybersecurity & AI Security Courses
 
-**Author**: Academic Defense Lab Curriculum  
+**Affiliation**: Butler Community College Cyber Defense Faculty Project (Andover Campus, KS)  
+**Notice**: Independent faculty research and pedagogical lab. Strictly for educational research and testing; not an official Butler Community College institutional service or endorsement.  
 **Target Course Level**: Undergraduate / Graduate Cybersecurity, Software Security, AI Safety  
 **Standard Mapping**: ACM/IEEE Cybersecurity, NIST NICE Knowledge Units (AI Threat Analysis, Defense-in-Depth)
 

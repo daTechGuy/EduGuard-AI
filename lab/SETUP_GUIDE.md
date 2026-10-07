@@ -1,9 +1,14 @@
 # EduGuard-AI — Docker Compose + Ollama Setup Guide
-## Butler Community College — Andover Campus (Cyber Defense Lab)
+## Butler Community College (Andover Campus) Cyber Faculty Research Project
 
-Companion setup guide for the **EduGuard-AI Butler Community College Academic Security Lab** suite.  
+> [!IMPORTANT]
+> **Academic Notice & Educational Disclaimer**:
+> **EduGuard-AI is an independent academic research and pedagogical cybersecurity lab developed by a Butler Community College Cyber Defense faculty member. It is NOT an official Butler Community College institutional project, endorsement, or service.**
+> This lab environment is strictly intended for educational research, student exercises, and defensive security testing within accredited curricula (aligned with Butler's NSA/DHS CAE-CD designated program).
+
+Companion setup guide for the **EduGuard-AI Cyber Defense Lab** suite.  
 Repo: `https://github.com/daTechGuy/EduGuard-AI`  
-Institution: **Butler Community College (Andover, KS)** — NSA/DHS CAE-CD Accredited
+Affiliation: **Butler Community College Cyber Defense Faculty Project (Andover, KS)**
 
 Everything runs **locally** — no cloud account, no external API key, and no per-token billing. Total one-time setup, including the base model download, takes ~15–20 minutes on a typical broadband connection.
 

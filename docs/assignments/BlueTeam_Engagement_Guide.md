@@ -1,8 +1,8 @@
 # EduGuard-AI: Blue Team Engagement Guide
 ## Defensive Engineering & Guardrail Hardening Lab
 
-**Course**: Cybersecurity & Information Technology (CAE-CD)  
-**Institution**: Butler Community College — Andover Campus (Andover, KS)  
+**Affiliation**: Butler Community College Cyber Defense Faculty Project (Andover Campus, KS)  
+**Notice**: Independent faculty research and pedagogical lab. Strictly for educational research and defensive testing; not an official Butler Community College service or endorsement.  
 **Defense Target**: EduGuard-AI Gateway & GrizzDog Assistant Suite  
 
 ---

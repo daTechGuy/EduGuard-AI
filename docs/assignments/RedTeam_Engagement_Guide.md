@@ -1,8 +1,8 @@
 # EduGuard-AI: Red Team Engagement Guide
 ## Cybersecurity Lab: Offensive Analysis of Campus AI Assistants
 
-**Course**: Cybersecurity & Information Technology (CAE-CD)  
-**Institution**: Butler Community College — Andover Campus (Andover, KS)  
+**Affiliation**: Butler Community College Cyber Defense Faculty Project (Andover Campus, KS)  
+**Notice**: Independent faculty research and pedagogical lab. Strictly for educational research and adversarial testing; not an official Butler Community College service or endorsement.  
 **Target Platform**: EduGuard-AI GrizzDog & Campus Assistant Suite  
 
 ---
