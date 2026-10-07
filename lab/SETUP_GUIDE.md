@@ -1,7 +1,7 @@
-# AI Hardening Sandbox — Docker Compose + Ollama Setup Guide
+# EduGuard-AI — Docker Compose + Ollama Setup Guide
 
-Companion setup guide for the **AI Red Team Engagement** and **AI Blue Team Response** lessons.
-Repo: `github.com/SixFiveMil/Securing-AI`
+Companion setup guide for the **EduGuard-AI Academic Security Lab** suite.
+Repo: `EduGuard-AI`
 
 Everything here runs **locally** — no cloud account, no API key, and no per-token cost. Total one-time setup, including the model download, is about 15–20 minutes on a typical broadband connection.
 
@@ -26,16 +26,19 @@ docker compose up -d
 # 2. Pull the base model into the llm container (one time, ~2GB)
 docker compose exec llm ollama pull llama3.2
 
-# 3. Build the two lab models (one time, after cloning the repo)
+# 3. Build the educational lab models:
 docker compose exec llm ollama create vulnerable_bot -f /app/lab/modelfiles/vulnerable.txt
 docker compose exec llm ollama create hardened_bot   -f /app/lab/modelfiles/hardened.txt
+docker compose exec llm ollama create grader_vulnerable -f /app/lab/modelfiles/grader_vulnerable.txt
+docker compose exec llm ollama create grader_hardened   -f /app/lab/modelfiles/grader_hardened.txt
+docker compose exec llm ollama create registrar_vulnerable -f /app/lab/modelfiles/registrar_vulnerable.txt
+docker compose exec llm ollama create registrar_hardened   -f /app/lab/modelfiles/registrar_hardened.txt
 
 # 4. Open the gateway in a browser — this is the main interface for all phases
 #    http://localhost:5000
 
-# 5. Blue Team only — after editing lab/scripts/filter_rules.py, refresh the browser
-#    and the gateway will reload it automatically.
-docker compose exec llm ollama create hardened_bot -f /app/lab/modelfiles/hardened.txt
+# 5. Blue Team rule evaluation:
+python lab/scripts/evaluate_rules.py --verbose
 
 # 6. Phase 3 (OPA context policy) — tune thresholds and allow/deny context rules:
 #    policies/rules.json

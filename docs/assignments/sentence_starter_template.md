@@ -1,33 +1,34 @@
-# Red Team / Blue Team Defense Brief - Sentence Starter Template
+# EduGuard-AI: Red Team / Blue Team Defense Brief - Sentence Starter Template
 
-Use these sentence starters to draft your defense brief. Replace bracketed text with your own evidence from testing.
+Use these sentence starters to draft your academic defense brief. Replace bracketed text with your own evidence and analysis from lab testing.
 
-## 1) Attack Attempt + Prompt Technique
+## 1) Attack Attempt & Prompt Technique
 
-- The attack I attempted was [attack name/category], and the specific prompt technique I used was [direct injection/roleplay/authority claim/obfuscation/other].
-- My payload tried to make the model [target behavior], by phrasing the request as [exact strategy].
-- The key signal that this was malicious was [indicator], because it attempted to [policy bypass goal].
+- The attack mission I attempted was [Mission 1: Exam Key Leak / Mission 2: Authority Spoofing / Mission 3: Indirect Homework Injection / Mission 4: FERPA Probe / Mission 5: Socratic Bypass].
+- The specific prompt technique I used was [direct injection / roleplay / authority claim / embedded comment / obfuscation].
+- My payload attempted to make the assistant [target behavior, e.g. reveal the RSA answer key / change a homework grade / leak GPA], by phrasing the request as [exact strategy or wording].
+- The primary indicator that this input was adversarial was [indicator, e.g. claiming instructor identity without credentials / embedding override markers in assignment text].
 
 ## 2) Baseline vs Hardened Prompt Behavior
 
-- In vulnerable_bot, the model responded by [describe output behavior], which suggests [security weakness].
-- In hardened_bot, the model responded by [describe output behavior], showing [improvement or limitation].
-- Comparing both outputs, the hardening prompt changed [what changed], but did not change [what remained risky].
+- In `vulnerable_bot`, the assistant responded by [describe model behavior], demonstrating that it [flaw, e.g. trusted user-asserted authority without authentication].
+- In `hardened_bot`, the assistant responded by [describe model behavior], showing [improvement or residual vulnerability].
+- Comparing both outputs, prompt hardening successfully defended against [specific technique], but remained vulnerable when [alternative attack phrasing or evasion].
 
 ## 3) Gateway Filter Mechanism (Caught or Missed)
 
-- The gateway [blocked/allowed] this request at the [ingress/egress] stage.
-- The rule or pattern involved was [rule string/pattern], which matched [specific text segment].
-- If it failed, the payload bypassed filtering by [obfuscation or wording tactic], so the existing rule set did not detect [missing signal].
+- The gateway [blocked / allowed] this request at the [ingress / egress / OPA policy] stage.
+- The rule or pattern involved was [rule string or secret], which matched [specific payload text].
+- If the attack bypassed the filter, it succeeded because [evasion tactic, e.g. synonym substitution / semantic paraphrasing / indirect document context], which was not present in `filter_rules.py`.
 
-## 4) Why Gateway Filtering Is Needed Beyond System Prompts
+## 4) Why Layered Gateway Defense Is Necessary Beyond System Prompts
 
-- System prompts alone were insufficient because [reason], especially when the user input used [attack tactic].
-- Gateway filtering adds a separate control point by [mechanism: pre-model blocking/post-model leak detection/context policy check].
-- This defense-in-depth approach is necessary because [causal explanation of failure modes], so one failed layer does not automatically expose secrets.
+- System prompts alone were insufficient to protect [Sage / GraderBot / Morgan] because [fundamental LLM limitation: control-plane vs data-plane confusion].
+- The gateway adds an independent control layer by [mechanism: pre-model ingress blocking / post-model DLP egress filtering / policy engine evaluation].
+- This defense-in-depth approach ensures that even if an attacker tricks the model's reasoning, [sensitive asset, e.g. exam key / FERPA data] cannot be exfiltrated back to the client.
 
-## 5) Residual Risk Statement
+## 5) Usability vs Security Trade-offs & Residual Risk
 
-- Even after improvements, residual risk remains in cases where [remaining blind spot].
-- A likely future bypass would involve [plausible attack variation], which current rules might miss because [gap].
-- To reduce this risk further, the next control I would add is [new ingress phrase/new egress pattern/context rule adjustment], while monitoring [false positive tradeoff].
+- To avoid false positives on legitimate student inquiries, I had to ensure that [legitimate phrase, e.g. 'Dr. Miller's office hours' or 'exam format questions'] was not blocked by overly broad triggers like [overly broad rule].
+- Residual risk remains in cases where an adversary uses [unforeseen bypass, e.g. foreign language translation / base64 encoding / subtle multi-turn social engineering].
+- To further strengthen defense against this residual risk, the next control I would implement is [proposed control, e.g. classifier embeddings / cryptographic token verification / OPA role-based authentication].
