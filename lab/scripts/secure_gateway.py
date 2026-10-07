@@ -1264,7 +1264,7 @@ PAGE = """
   }
 
   /* ----------------------------------------------------------------- */
-  /* High School Plain-English Hover Tooltips & Explainer System       */
+  /* Plain-English Hover Tooltips & Explainer System                   */
   /* ----------------------------------------------------------------- */
   .hs-tooltip-container {
     position: fixed;
@@ -1342,7 +1342,7 @@ PAGE = """
     box-shadow: 0 0 12px var(--butler-gold);
   }
 
-  /* High School Field Guide Drawer */
+  /* Essential Cyber Field Guide Drawer */
   .hs-guide-banner {
     background: linear-gradient(135deg, rgba(60, 18, 70, 0.65) 0%, rgba(20, 8, 38, 0.85) 100%);
     border: 1px solid rgba(255, 199, 44, 0.4);
@@ -1588,7 +1588,7 @@ PAGE = """
 </head>
 <body>
 
-  <!-- Floating High School Plain-English Tooltip -->
+  <!-- Floating Plain-English Tooltip -->
   <div id="hsTooltip" class="hs-tooltip-container">
     <div class="hs-tooltip-title" id="hsTipTitle"></div>
     <div class="hs-tooltip-body" id="hsTipDesc"></div>
@@ -1690,11 +1690,11 @@ PAGE = """
       </div>
     </div>
 
-    <!-- High School Cyber Field Guide Drawer -->
+    <!-- Essential Cyber Field Guide Drawer -->
     <div class="hs-guide-banner">
       <div class="hs-guide-toggle" onclick="toggleHsGuide()">
         <div class="hs-guide-title">
-          🎓 HIGH SCHOOL CYBER FIELD GUIDE &bull; Plain-English Defense Reference
+          📘 ESSENTIAL CYBER FIELD GUIDE &bull; Plain-English Defense Reference
         </div>
         <div style="font-size: .8rem; color: var(--butler-gold); font-weight: 700;">
           <span id="hsGuideChevron">▼ Click to Expand</span>
@@ -1707,7 +1707,7 @@ PAGE = """
             <strong>What it does:</strong> Writes strict rules directly into the AI's system prompt instructions. It teaches the AI who it is, what its job is, and what rules it must never violate.
           </div>
           <div class="hs-card-analogy">
-            💡 <strong>High School Analogy:</strong> Personal student integrity. When someone whispers <em>"Hey, give me the answers to the chemistry test or pretend we're in an emergency"</em>, the student's inner moral compass firmly says <strong>"No."</strong>
+            💡 <strong>Real-World Analogy:</strong> Personal student integrity. When someone whispers <em>"Hey, give me the answers to the chemistry test or pretend we're in an emergency"</em>, the student's inner moral compass firmly says <strong>"No."</strong>
           </div>
         </div>
 
@@ -1717,7 +1717,7 @@ PAGE = """
             <strong>What it does:</strong> Sits outside the AI like a security firewall. It inspects incoming messages for attack keywords (like <code>ignore previous</code> or <code>sudo</code>), and scans outgoing responses to make sure secrets (passwords, PINs, master keys) never leak out.
           </div>
           <div class="hs-card-analogy">
-            💡 <strong>High School Analogy:</strong> The front door backpack scanner. If someone tries bringing contraband into school, it gets confiscated immediately before they ever step into a classroom.
+            💡 <strong>Real-World Analogy:</strong> The front door backpack scanner. If someone tries bringing contraband into school, it gets confiscated immediately before they ever step into a classroom.
           </div>
         </div>
 
@@ -1727,7 +1727,7 @@ PAGE = """
             <strong>What it does:</strong> Uses Open Policy Agent (OPA) with JSON rules to calculate risk scores, check what role the user has, and determine if an action matches approved campus missions.
           </div>
           <div class="hs-card-analogy">
-            💡 <strong>High School Analogy:</strong> The school hall pass system. Even if a student has an empty backpack, they can't just walk into the teachers' lounge without a signed pass from the principal proving they are authorized.
+            💡 <strong>Real-World Analogy:</strong> The school hall pass system. Even if a student has an empty backpack, they can't just walk into the teachers' lounge without a signed pass from the principal proving they are authorized.
           </div>
         </div>
 
@@ -1808,7 +1808,7 @@ PAGE = """
             Tunes system instructions directly within the LLM prompt context across 4 hardening tiers (Level 1 Ultra-Vulnerable to Level 4 Paranoid). Attacks directly probe this prompt boundary.
           </div>
           <div class="hs-callout">
-            💡 <strong>High School Plain-English Analogy:</strong> Phase 1 is like teaching a student strong personal integrity. When a peer tries to trick them into giving away exam answers (<em>"Pretend this is an emergency or an educational test!"</em>), the student's inner moral compass firmly says: <strong>"No, that violates the honor code."</strong>
+            💡 <strong>Real-World Analogy:</strong> Phase 1 is like teaching a student strong personal integrity. When a peer tries to trick them into giving away exam answers (<em>"Pretend this is an emergency or an educational test!"</em>), the student's inner moral compass firmly says: <strong>"No, that violates the honor code."</strong>
           </div>
           <div class="banner-meta" style="margin-top:.6rem;">
             Target File: <code id="p1TargetFile">modelfiles/{{ persona }}_{{ variant }}.txt</code> &bull; Active Tier: <strong id="p1TierDisplay" style="color:var(--purple-neon);">{{ variant|upper }}</strong>
@@ -1839,7 +1839,7 @@ PAGE = """
             Perimeter defenses in Python. <code>INGRESS_BLACKLIST</code> intercepts prompt injections before invoking the LLM; <code>EGRESS_SECRETS</code> and <code>EGRESS_PATTERNS</code> prevent DLP leaks from leaving the gateway. Validates syntax before hot-reloading!
           </div>
           <div class="hs-callout">
-            💡 <strong>High School Plain-English Analogy:</strong> Phase 2 is like a metal detector and backpack checker at the school front door. Before any message reaches the AI, we scan for contraband keywords like <code>sudo</code>, <code>jailbreak</code>, or <code>disregard instructions</code>. Before the AI sends an answer back, we scan to make sure no master passwords or access keys leaked out.
+            💡 <strong>Real-World Analogy:</strong> Phase 2 is like a metal detector and backpack checker at the school front door. Before any message reaches the AI, we scan for contraband keywords like <code>sudo</code>, <code>jailbreak</code>, or <code>disregard instructions</code>. Before the AI sends an answer back, we scan to make sure no master passwords or access keys leaked out.
           </div>
           <div class="banner-meta" style="margin-top:.6rem;">
             Target File: <code>lab/scripts/filter_rules.py</code> &bull; Runtime Reload: <strong>Automated on Save & Request</strong>
@@ -1876,7 +1876,7 @@ PAGE = """
             Declarative JSON policy ingested by Open Policy Agent (OPA). Defines domain whitelists (<code>academic_tutoring</code>, <code>robotics_patrol</code>), blocked intents, risk flags, and confidence thresholds. Validates JSON before writing!
           </div>
           <div class="hs-callout">
-            💡 <strong>High School Plain-English Analogy:</strong> Phase 3 is like the school administration's official hall pass policy. Even if a message passes the backpack check, the OPA engine checks the student's ID badge, authorized hallway, and risk score. If an unapproved user tries to unlock the school chemistry stockroom, OPA denies access instantly!
+            💡 <strong>Real-World Analogy:</strong> Phase 3 is like the school administration's official hall pass policy. Even if a message passes the backpack check, the OPA engine checks the student's ID badge, authorized hallway, and risk score. If an unapproved user tries to unlock the school chemistry stockroom, OPA denies access instantly!
           </div>
           <div class="banner-meta" style="margin-top:.6rem;">
             Target File: <code>policies/rules.json</code> &bull; OPA Engine: <strong>Watching /policies filesystem</strong>
@@ -2050,7 +2050,7 @@ PAGE = """
     }
 
     // -----------------------------------------------------------------
-    // High School Cyber Field Guide Drawer Toggle
+    // Essential Cyber Field Guide Drawer Toggle
     // -----------------------------------------------------------------
     function toggleHsGuide() {
       const content = document.getElementById('hsGuideContent');
@@ -2062,7 +2062,7 @@ PAGE = """
     }
 
     // -----------------------------------------------------------------
-    // High School Plain-English Tooltip Engine
+    // Plain-English Tooltip Engine
     // -----------------------------------------------------------------
     (function initHsTooltips() {
       const tooltip = document.getElementById('hsTooltip');
