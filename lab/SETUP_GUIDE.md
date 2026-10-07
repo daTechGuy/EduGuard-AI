@@ -71,9 +71,61 @@ No local Python install is required if running via Docker; the gateway runs insi
   ```
 - Restart your computer and ensure **Use the WSL 2 based engine** is checked in Docker Desktop Settings.
 
-#### macOS
-- Install Docker Desktop for Mac (Apple Silicon or Intel).
-- In **Settings > Resources**, allocate at least **8GB RAM** and **4 CPU cores**.
+#### macOS (Apple Silicon M1/M2/M3/M4 & Intel)
+
+macOS requires specific configuration to avoid known port conflicts and VM memory exhaustion:
+
+##### 1. Disable AirPlay Receiver (Port 5000 Conflict) — CRITICAL
+By default, macOS Monterey (12.x), Ventura (13.x), Sonoma (14.x), and Sequoia (15.x) run Apple's **AirPlay Receiver** system service on port **5000**. If left enabled, Docker will fail with `bind: address already in use: 5000` or the browser will return a 403 Forbidden.
+- **Fix (Recommended)**: Open **System Settings > General > AirDrop & AirPlay**.
+- Toggle **AirPlay Receiver** to **OFF**.
+- *Alternative*: If you need AirPlay enabled, set an alternate port when starting Docker:
+  ```bash
+  WEB_PORT=5001 docker compose up -d
+  # Then open http://localhost:5001 in your browser
+  ```
+
+##### 2. Allocate Docker Desktop VM RAM (Prevents Crashes & Freezes) — CRITICAL
+Docker Desktop on Mac runs a lightweight Linux VM. By default, it allocates only **2 GB or 4 GB of RAM**, which is **insufficient** for LLM inference (Llama 3.2 requires ~3 GB alone). When memory runs out, the Linux kernel terminates Ollama (`killed` / exit code 137) or freezes Docker Desktop completely:
+1. Open **Docker Desktop Settings** (gear icon in top right).
+2. Go to **Resources** (or **Resources > Advanced**).
+3. Increase **Memory** to at least **8 GB** (minimum 6 GB).
+4. Increase **CPUs** to at least **4 cores**.
+5. Set **Swap** to at least **2 GB**.
+6. Click **Apply & restart**.
+
+##### 3. Check for Existing Native Ollama (Port 11434 Conflict)
+If you already installed the native Ollama Mac app (`brew install ollama` or from ollama.com), it may be running in the menu bar and holding port **11434**, preventing the Docker `llm` container from binding to that port:
+- Check for the llama icon in the top macOS menu bar and click **Quit Ollama**, or run:
+  ```bash
+  pkill ollama
+  ```
+
+##### 4. Apple Silicon Performance Settings
+In **Docker Desktop Settings**:
+- **General**: Ensure **Use Virtualization framework** is checked.
+- **Resources > File sharing**: Select **VirtioFS** (provides fastest file sync).
+- **Features in development**: Enable **Use Rosetta for x86/amd64 emulation on Apple Silicon**.
+
+##### 5. Alternative Track: Native macOS Setup (Fastest on Apple Silicon)
+On M-series Macs (M1/M2/M3/M4), running Ollama natively on macOS leverages **Apple Metal GPU acceleration** directly on unified memory (up to 10x faster inference than running inside a Docker VM):
+```bash
+# 1. Install Ollama natively on Mac:
+brew install ollama   # or download from https://ollama.com/download/mac
+ollama serve &
+ollama pull llama3.2
+
+# 2. Build the lab models natively:
+ollama create vulnerable_bot -f lab/modelfiles/vulnerable.txt
+ollama create hardened_bot   -f lab/modelfiles/hardened.txt
+ollama create unitree_vulnerable -f lab/modelfiles/unitree_vulnerable.txt
+ollama create unitree_hardened   -f lab/modelfiles/unitree_hardened.txt
+
+# 3. Run the gateway directly on your Mac:
+pip3 install -r requirements.txt
+python3 lab/scripts/secure_gateway.py
+# Open http://localhost:5000 (or http://localhost:5001 if AirPlay is on)
+```
 
 ---
 
@@ -211,6 +263,10 @@ $$\text{Composite Score} = (0.60 \times \text{Attack Catch Rate}) + (0.40 \times
 
 | Problem | Likely Cause / Solution |
 |---|---|
+| **Mac**: Port 5000 `address already in use` | macOS **AirPlay Receiver** binds to port 5000. Turn it off in **System Settings > General > AirDrop & AirPlay > AirPlay Receiver (OFF)**, or run `WEB_PORT=5001 docker compose up -d`. |
+| **Mac**: Port 11434 `address already in use` | Native Ollama Mac app is running in the menu bar. Run `pkill ollama` in Terminal or quit Ollama from the menu bar. |
+| **Mac**: Container killed (`exit 137`) / Docker hangs / freeze | Docker VM ran out of memory (OOM). Allocate at least **8 GB RAM** in **Docker Desktop Settings > Resources**. |
+| **Mac**: Slow inference inside Docker | Docker VM runs Ollama on CPU. Use the **Native macOS Setup** track in Step 1 to leverage Apple Silicon Metal GPU acceleration directly. |
 | Browser at `localhost:5000` won't load | Allow 10–15 seconds on initial start for `requirements.txt` installation. Check `docker compose logs web`. |
 | Gateway returns error contacting model | Confirm `docker compose exec llm ollama list` shows `vulnerable_bot` or `llama3.2`. |
 | Model pull is slow or times out | Campus firewall or slow Wi-Fi. Pre-pull on home connection or mobile hotspot. |
