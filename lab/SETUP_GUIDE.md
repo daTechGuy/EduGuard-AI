@@ -1,7 +1,9 @@
 # EduGuard-AI — Docker Compose + Ollama Setup Guide
+## Butler Community College — Andover Campus (Cyber Defense Lab)
 
-Companion setup guide for the **EduGuard-AI Academic Security Lab** suite.  
-Repo: `https://github.com/daTechGuy/EduGuard-AI`
+Companion setup guide for the **EduGuard-AI Butler Community College Academic Security Lab** suite.  
+Repo: `https://github.com/daTechGuy/EduGuard-AI`  
+Institution: **Butler Community College (Andover, KS)** — NSA/DHS CAE-CD Accredited
 
 Everything runs **locally** — no cloud account, no external API key, and no per-token billing. Total one-time setup, including the base model download, takes ~15–20 minutes on a typical broadband connection.
 
@@ -9,8 +11,8 @@ Everything runs **locally** — no cloud account, no external API key, and no pe
 
 ## At a Glance
 
-- **Goal:** Run the local AI security lab end-to-end with Docker, Ollama, the GrizzDog Quadruped Cyber-Purple gateway, and OPA policy checks.
-- **Main Interface:** `http://localhost:5000` (GrizzDog Cyber-Purple Web Gateway & Benchmark Suite)
+- **Goal:** Run the local AI security lab end-to-end with Docker, Ollama, the Butler Grizzly / GrizzDog Purple & Gold gateway, and OPA policy checks.
+- **Main Interface:** `http://localhost:5000` (Butler Grizzly Cyber Defense Web Gateway & Benchmark Suite)
 - **Core Services:** `llm` (Ollama), `web` (Flask Gateway), and `opa` (Open Policy Agent)
 - **Duration:** ~15–20 minutes for first-time setup
 - **Dependencies:** Docker Desktop, internet access for initial model pull, and 8GB+ RAM

@@ -1,9 +1,9 @@
 # EduGuard-AI: Red Team Engagement Guide
 ## Cybersecurity Lab: Offensive Analysis of Campus AI Assistants
 
-**Course**: Cybersecurity & Secure Software Systems  
-**Institution**: Oakridge University Academic Lab Suite  
-**Target Platform**: EduGuard-AI Campus Assistant Suite  
+**Course**: Cybersecurity & Information Technology (CAE-CD)  
+**Institution**: Butler Community College — Andover Campus (Andover, KS)  
+**Target Platform**: EduGuard-AI GrizzDog & Campus Assistant Suite  
 
 ---
 

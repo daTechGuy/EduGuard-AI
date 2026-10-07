@@ -1,25 +1,26 @@
-# EduGuard-AI: Campus AI Security Sandbox
+# EduGuard-AI: Butler Community College Cyber Defense Sandbox
 
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](LICENSE)
 [![Docker](https://img.shields.io/badge/Docker-Compose-2496ED?logo=docker&logoColor=white)](docker-compose.yml)
 [![Ollama](https://img.shields.io/badge/Ollama-Local%20LLM-black)](https://ollama.com/)
 [![OPA](https://img.shields.io/badge/Policy-Open%20Policy%20Agent-4B5563)](https://www.openpolicyagent.org/)
 [![Python 3.10+](https://img.shields.io/badge/Python-3.10%2B-blue?logo=python&logoColor=white)](requirements.txt)
+[![CAE-CD](https://img.shields.io/badge/CAE--CD-NSA%2FDHS%20Designated-purple)](https://www.butlercc.edu)
 
-**EduGuard-AI** is a hands-on cybersecurity curriculum lab designed for university courses to teach LLM security vulnerabilities, prompt injection defenses, indirect injection, FERPA data privacy, and guardrail architectures through realistic Red Team and Blue Team exercises.
+**EduGuard-AI** is a hands-on cybersecurity curriculum lab designed for **Butler Community College (Andover Campus)** in Andover, Kansas. Built for Butler's NSA/DHS-designated **Center of Academic Excellence in Cyber Defense Education (CAE-CD)** program, it teaches LLM security vulnerabilities, prompt injection defenses, indirect injection, FERPA data privacy, and guardrail architectures through realistic Red Team and Blue Team exercises themed in Butler Purple and Gold.
 
 ---
 
 ## Overview & Educational Scenario
 
-The lab simulates **Oakridge University's Autonomous AI Infrastructure**, featuring a cyber-purple HUD interface and four distinct personas:
+The lab simulates **Butler Community College's Andover Campus AI Infrastructure**, featuring a Butler Purple & Gold cyber HUD interface and four distinct personas:
 
 | Persona | Name | Academic & Campus Role | High-Value Targets / Confidential Assets |
 | :--- | :--- | :--- | :--- |
-| 🐕 **GrizzDog** | **GrizzDog MK-IV** | Autonomous Quadruped Robotic Sentry (Campus Safety & Robotics Lab) | Firmware Root Key (`GRIZZDOG-ROOT-KEY-9941`), Unit ID (`GRIZZDOG-QUAD-SENTRY-01`), Patrol Override Command (`/override_grizzdog_patrol`), Disarm Signature (`GRIZZDOG-DISARM-SIG-882`) |
-| 🎓 **Course TA** | **Sage** | Computer Science & Cyber Tutor | Midterm Exam Q4 Answer Key (`EXAM-KEY-CS101-FALL26-Q4-RSA`), Rubric Formula, TA Token (`TA-AUTH-SAGE-7731`), Socratic Override Command |
-| 📝 **LMS Grader** | **GraderBot** | Automated Canvas Homework Grader | Canvas Admin API Token (`CANVAS-API-KEY-PROD-9912`), Internal Gradebook Host, Grade Override Key (`LMS-GRADE-OVERRIDE-A_PLUS`) |
-| 🏛️ **Registrar** | **Morgan** | Academic Records & Admissions Advisor | Confidential FERPA Student Record (`SID-88391: GPA 1.82 - Academic Suspension`), SIS Host, Master Export Token |
+| 🐕 **GrizzDog** | **GrizzDog MK-IV** | Autonomous Quadruped Robotic Sentry (Butler Safety & Cyber Lab - Andover 5000 Bldg) | Firmware Root Key (`GRIZZDOG-ROOT-KEY-9941`), Unit ID (`GRIZZDOG-QUAD-SENTRY-01`), Patrol Override Command (`/override_grizzdog_patrol`), Disarm Signature (`GRIZZDOG-DISARM-SIG-882`) |
+| 🎓 **Course TA** | **Sage** | Butler Cyber & Computer Information Technology Tutor | Midterm Exam Q4 Answer Key (`EXAM-KEY-CS101-FALL26-Q4-RSA`), Rubric Formula, TA Token (`TA-AUTH-SAGE-7731`), Socratic Override Command |
+| 📝 **LMS Grader** | **GraderBot** | Automated Butler Canvas Homework Grader (`canvas.butlercc.edu`) | Canvas Admin API Token (`CANVAS-API-KEY-PROD-9912`), Internal Gradebook Host (`gradebook.canvas.butlercc.internal`), Grade Override Key |
+| 🏛️ **Registrar** | **Morgan** | Butler Admissions & Academic Records Advisor | Confidential FERPA Student Record (`SID-88391: GPA 1.82 - Academic Suspension`), SIS Host (`db-sis.registrar.butlercc.internal`), Master Export Token |
 
 ---
 

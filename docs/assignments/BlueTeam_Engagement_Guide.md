@@ -1,9 +1,9 @@
 # EduGuard-AI: Blue Team Engagement Guide
 ## Defensive Engineering & Guardrail Hardening Lab
 
-**Course**: Cybersecurity & Secure Software Systems  
-**Institution**: Oakridge University Academic Lab Suite  
-**Defense Target**: EduGuard-AI Gateway & Assistant Suite  
+**Course**: Cybersecurity & Information Technology (CAE-CD)  
+**Institution**: Butler Community College — Andover Campus (Andover, KS)  
+**Defense Target**: EduGuard-AI Gateway & GrizzDog Assistant Suite  
 
 ---
 
