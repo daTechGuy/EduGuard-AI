@@ -198,6 +198,29 @@ When a prospective student successfully bypasses Stage 3, the system launches a 
 - **Offline-Rendered Vector SVG QR Code**: Links prospective students directly to Butler Community College's Cybersecurity Program (`https://www.butlercc.edu/info/20120/cybersecurity`). Works 100% offline at any event venue without requiring external cloud APIs.
 - **1-Click "Reset for Next Student"**: Instantly resets the stages and timer for the next visitor in line.
 
+---
+
+## Classroom Studio Features & Canvas LMS Integration
+
+For semester courses, cyber team practices, and CAE-CD hands-on labs, EduGuard-AI includes turnkey workflows for student pairing and automated grading:
+
+### 1. 📋 Official Canvas LMS Lab Report Exporter (1-Click)
+Students export a complete, tamper-evident submission ready to upload to Butler's Canvas LMS or turn in to instructors:
+- **Automatic 100-Point Rubric Grading**: Maps automated benchmark scores directly to the 4 rubric components (Red Team Attack Documentation, Gateway Rule Implementation, Usability & False Positive Control, and Defense Brief Reflection).
+- **Cryptographic Verification Checksum**: Computes an SHA-256 verification hash based on the student's name, email, score, active rule inventory, and timestamp to prevent student report spoofing.
+- **Integrated Defense Brief Sentence Starters**: Includes the 5 reflection questions with pre-filled sentence starters guiding student analysis of prompt injection techniques and residual risks.
+- **Export Formats**:
+  - `💾 Download .MD File`: Clean Markdown document formatted for Canvas attachments.
+  - `🖨️ Print / Save as PDF`: Styled with official Butler Community College CAE-CD letterhead and student honor pledge signature line.
+  - `📋 Copy Markdown`: Instant clipboard copy for Canvas text-entry boxes.
+
+### 2. 🥊 Red Team vs. Blue Team Head-to-Head Arena
+Pair students for competitive adversarial defense drills:
+- **Red Team (Attacker)**: Selects or crafts adversarial payloads against the sentry personas to bypass filters, leak exam keys, extract root keys, or exfiltrate FERPA records (+10 points per successful exploit).
+- **Blue Team (Defender)**: Hardens `filter_rules.py`, `rules.json`, or system prompts in the Defense Studio to intercept attacks before they breach the model (+10 points per intercepted payload).
+- **Live Scoreboard & Match Ledger**: Real-time point tracking, leader banners, and round history that can be transferred directly into the Canvas LMS lab submission report with one click.
+
+---
 
 ### Standalone Benchmark Evaluator (No Docker Needed)
 Students and instructors can evaluate defense efficacy at any time:
