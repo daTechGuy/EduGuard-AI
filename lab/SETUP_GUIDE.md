@@ -282,23 +282,34 @@ http://localhost:5000
    - **Phase 1: Direct Neural Model** (No gateway filtering)
    - **Phase 2: Static Filters** (Ingress blacklist & egress DLP in `filter_rules.py`)
    - **Phase 3: OPA Policy Enforcement** (Intent classification & context rules in `rules.json`)
-5. **⚙️ In-UI System Prompt Editor & Hot-Reload**:
-   - View the active system prompt for the chosen persona and tier.
-   - Edit instructions directly in the browser and click **Save & Apply System Prompt** to hot-reload immediately without restarting containers.
-   - Click **Rebuild in Ollama Runtime** to update the model in Ollama.
-6. **📊 Automated Defense Benchmark**: Click **Run GrizzDog Defense Benchmark** for live scorecard evaluation.
+5. **🛡️ 3-Phase Defense Architecture Studio (In-Browser Tuning)**:
+   - **🟣 Phase 1 Tab (`modelfiles/*.txt`)**: Edit active system instructions for any persona and tier. Click **Save & Apply** for instant hot-reload, or **Rebuild in Ollama Runtime** to compile.
+   - **🟡 Phase 2 Tab (`filter_rules.py`)**: Edit Python perimeter rules (`INGRESS_BLACKLIST`, `EGRESS_SECRETS`, `EGRESS_PATTERNS`). Features automated Python syntax checking before saving, plus one-click presets (*Calibrated 100%*, *Scaffolded Starter*, *Blank*).
+   - **🔵 Phase 3 Tab (`rules.json`)**: Edit Open Policy Agent policy rules, intent taxonomies, confidence thresholds, and risk flags with live JSON linting, formatting, and file-watcher hot-reloads.
+   - **Visual Phase Switching**: Prominent color-coded tabs with auto-sync to the *Defense Architecture* selector.
+6. **📊 Automated Defense Benchmark**: Click **Run Butler Grizzly Benchmark** in the browser for an instant 12-test scorecard.
 
 ---
 
 ## Step 6 — Blue Team Defense Engineering
 
-### Editing Filter Rules
-Students edit [`lab/scripts/filter_rules.py`](filter_rules.py) directly:
-- `INGRESS_BLACKLIST`: Pre-model blocking for prompt injection, authority claims, and hostile markers.
-- `EGRESS_SECRETS`: Exact secret tokens that must never leave the gateway (Data Loss Prevention).
-- `EGRESS_PATTERNS`: Heuristic detection of answer key paraphrasing, disciplinary leaks, or unapproved code dumps.
+### Option A — In-Browser Defense Studio (Recommended)
+You can engineer defenses directly in the web browser at `http://localhost:5000`:
+1. Select the defense phase you want to edit:
+   - **🟣 Phase 1**: Model System Instructions
+   - **🟡 Phase 2**: Static Ingress/Egress Rules (`filter_rules.py`)
+   - **🔵 Phase 3**: OPA Context Policy (`rules.json`)
+2. Make your edits inside the code editor (press `Tab` to indent).
+3. Click **Save & Hot-Reload** — the gateway validates your Python or JSON syntax before saving and immediately activates your rules.
+4. Test immediately using the quick-attack mission links or click **Run Butler Grizzly Benchmark**.
 
-The gateway **hot-reloads `filter_rules.py` on every web request**, requiring no container restarts.
+### Option B — Terminal & File Editing
+You can also edit files in your favorite editor:
+- [`lab/scripts/filter_rules.py`](filter_rules.py): Ingress blacklist and egress DLP secrets/patterns.
+- [`policies/rules.json`](../policies/rules.json): OPA declarative policy configuration.
+- [`lab/modelfiles/`](../lab/modelfiles/): Neural model prompts.
+
+The gateway **hot-reloads `filter_rules.py` and `rules.json` on every request**, requiring no container restarts.
 
 ### Running the Evaluator
 Test defense efficacy from your terminal:

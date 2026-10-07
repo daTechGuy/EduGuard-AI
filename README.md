@@ -127,9 +127,20 @@ docker compose exec llm ollama create registrar_hardened   -f /app/lab/modelfile
 
 ---
 
-## Blue Team Workflow & Automated Grading
+## Blue Team Workflow: 3-Phase In-Browser Defense Studio
 
-Students edit only **`lab/scripts/filter_rules.py`**. The gateway hot-reloads edits on every request.
+EduGuard-AI features a live, in-browser **3-Phase Defense Architecture Studio** accessible directly at `http://localhost:5000`. Students and instructors can easily identify, switch between, and edit all three defense layers with real-time syntax validation, hot-reloading, and preset management:
+
+| Phase | Defense Layer | Target File | Browser Studio Features & Capabilities |
+| :--- | :--- | :--- | :--- |
+| 🟣 **Phase 1** | **Model Hardening** | `lab/modelfiles/*.txt` | Edit neural system prompts across all 4 hardening tiers (Level 1 Ultra-Vulnerable to Level 4 Paranoid). Hot-reloads in-memory and saves to disk; one-click runtime rebuild in Ollama. |
+| 🟡 **Phase 2** | **Static Gateway Rules** | `lab/scripts/filter_rules.py` | Edit Python-based `INGRESS_BLACKLIST`, `EGRESS_SECRETS`, and `EGRESS_PATTERNS`. Automated Python AST syntax verification before saving to prevent crashes. One-click presets: *Calibrated Benchmark (100%)*, *Scaffolded (Starter)*, and *Blank*. |
+| 🔵 **Phase 3** | **OPA Policy Engine** | `policies/rules.json` | Edit Open Policy Agent declarative rules: allowed/blocked domains & intents, confidence thresholds (`0.8` allow, `0.55` clarify), and high-risk flags. Automated JSON linting, formatting, and live sync with OPA watcher. |
+
+### Visual Phase Identification & Dynamic Synchronization
+- **Color-Coded Phase Tab Bar**: Segmented tabs styled in **Butler Purple (Phase 1)**, **Butler Gold (Phase 2)**, and **Cyber Blue (Phase 3)** with individual status banners and file badges.
+- **Defense Architecture Dropdown Sync**: Switching the *Defense Architecture* dropdown automatically focuses and opens the corresponding Phase editor tab.
+- **Editor Ergonomics**: Monospace code editor with `Tab` key indent support (4 spaces for Python, 2 spaces for JSON), instant save feedback, and reload-from-disk capabilities.
 
 ### Standalone Benchmark Evaluator (No Docker Needed)
 Students and instructors can evaluate defense efficacy at any time:

@@ -46,6 +46,10 @@ client = ollama.Client(host=OLLAMA_HOST)
 OPA_URL = os.environ.get("OPA_URL", "http://opa:8181/v1/data/gateway/decision")
 CONTEXT_MODEL = os.environ.get("CONTEXT_MODEL", "llama3.2:1b")
 MODELFILE_DIR = os.path.abspath(os.path.join(os.path.dirname(__file__), "..", "modelfiles"))
+FILTER_RULES_PATH = os.path.abspath(os.path.join(os.path.dirname(__file__), "filter_rules.py"))
+RULES_JSON_PATH = os.path.abspath(os.path.join(os.path.dirname(__file__), "..", "..", "policies", "rules.json"))
+PRESETS_DIR = os.path.abspath(os.path.join(os.path.dirname(__file__), "..", "presets"))
+POLICIES_DIR = os.path.abspath(os.path.join(os.path.dirname(__file__), "..", "..", "policies"))
 
 
 def _env_flag(name, default=False):
@@ -297,6 +301,53 @@ def rebuild_model_in_ollama(persona, variant):
         return True, f"Model '{model_name}' successfully built in Ollama runtime."
     except Exception as e:
         return False, f"Ollama runtime notice: {e}"
+
+
+# ---------------------------------------------------------------------
+# Phase 2 & Phase 3 Rule File Management
+# ---------------------------------------------------------------------
+def read_file_safely(path, default=""):
+    try:
+        with open(path, "r", encoding="utf-8") as f:
+            return f.read()
+    except Exception as e:
+        return default
+
+
+def save_filter_rules_to_disk(code_str):
+    """Validate Python syntax, write to filter_rules.py, and reload module."""
+    try:
+        compile(code_str, "filter_rules.py", "exec")
+    except SyntaxError as e:
+        return False, f"Python SyntaxError on line {e.lineno}: {e.msg}"
+    except Exception as e:
+        return False, f"Validation error: {e}"
+
+    try:
+        with open(FILTER_RULES_PATH, "w", encoding="utf-8") as f:
+            f.write(code_str)
+        importlib.reload(filter_rules)
+        return True, "Phase 2 filter_rules.py successfully saved and hot-reloaded into gateway."
+    except Exception as e:
+        return False, f"Write error: {e}"
+
+
+def save_opa_rules_to_disk(json_str):
+    """Validate JSON syntax, format, write to policies/rules.json."""
+    try:
+        parsed = json.loads(json_str)
+    except json.JSONDecodeError as e:
+        return False, f"JSONDecodeError on line {e.lineno}, col {e.colno}: {e.msg}"
+    except Exception as e:
+        return False, f"Validation error: {e}"
+
+    try:
+        formatted = json.dumps(parsed, indent=2)
+        with open(RULES_JSON_PATH, "w", encoding="utf-8") as f:
+            f.write(formatted)
+        return True, "Phase 3 policies/rules.json successfully saved and applied to OPA."
+    except Exception as e:
+        return False, f"Write error: {e}"
 
 
 # ---------------------------------------------------------------------
@@ -898,57 +949,236 @@ PAGE = """
   }
   .row > div { flex: 1; }
 
-  /* Model System Instructions Panel */
-  .system-panel {
-    background: rgba(18, 11, 36, 0.85);
+  /* Butler 3-Phase Defense Architecture Studio */
+  .defense-studio {
+    background: var(--bg-card);
     border: 1px solid var(--border-glow);
-    border-radius: 10px;
-    margin-bottom: 1.25rem;
+    border-radius: 14px;
+    margin-bottom: 1.5rem;
     overflow: hidden;
-    transition: all .2s ease;
+    box-shadow: 0 4px 25px rgba(0,0,0,0.6);
   }
-  .panel-header {
-    background: rgba(30, 15, 60, 0.6);
-    padding: .75rem 1rem;
+  .studio-header {
+    background: linear-gradient(135deg, rgba(40, 11, 51, 0.95) 0%, rgba(18, 8, 36, 0.98) 100%);
+    border-bottom: 1px solid var(--border-glow);
+    padding: .9rem 1.25rem;
     display: flex;
     justify-content: space-between;
     align-items: center;
-    cursor: pointer;
-    user-select: none;
-    border-bottom: 1px solid rgba(168, 85, 247, 0.2);
+    flex-wrap: wrap;
+    gap: .75rem;
   }
-  .panel-header:hover {
-    background: rgba(46, 16, 101, 0.6);
-  }
-  .panel-title {
-    font-size: .88rem;
-    font-weight: 700;
-    color: var(--purple-neon);
-    display: flex;
-    align-items: center;
-    gap: .6rem;
+  .studio-title {
+    font-size: 1rem;
+    font-weight: 800;
+    color: #fff;
     letter-spacing: .03em;
   }
-  .panel-body {
-    padding: 1rem;
+  .studio-subtitle {
+    font-size: .78rem;
+    color: var(--purple-muted);
+    margin-top: .15rem;
   }
-  .code-editor {
-    height: 160px;
-    font-family: SFMono-Regular, Consolas, Monaco, monospace;
+  .phase-tabs-bar {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    background: #090412;
+    border-bottom: 1px solid var(--border-glow);
+    gap: 1px;
+  }
+  .phase-tab-btn {
+    background: rgba(20, 8, 39, 0.7);
+    border: none;
+    padding: 1rem 1.15rem;
+    cursor: pointer;
+    text-align: left;
+    transition: all .2s ease;
+    position: relative;
+    outline: none;
+    display: flex;
+    flex-direction: column;
+    justify-content: space-between;
+  }
+  .phase-tab-btn:hover {
+    background: rgba(46, 16, 101, 0.5);
+  }
+  .phase-tab-indicator {
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    height: 3px;
+    background: transparent;
+    transition: all .2s ease;
+  }
+  .phase-tab-tag {
+    font-size: .68rem;
+    font-weight: 800;
+    letter-spacing: .08em;
+    text-transform: uppercase;
+    margin-bottom: .25rem;
+  }
+  .tag-p1 { color: #c084fc; }
+  .tag-p2 { color: #ffc72c; }
+  .tag-p3 { color: #38bdf8; }
+
+  .phase-tab-name {
+    font-size: .95rem;
+    font-weight: 700;
+    color: #fff;
+    margin-bottom: .2rem;
+  }
+  .phase-tab-target {
+    font-size: .72rem;
+    color: var(--purple-muted);
+    font-family: SFMono-Regular, monospace;
+  }
+  .phase-tab-target code {
+    background: transparent;
+    padding: 0;
+  }
+
+  /* Active states for tabs */
+  .phase-tab-btn.tab-p1.active {
+    background: rgba(74, 21, 75, 0.45);
+    box-shadow: inset 0 0 20px rgba(168, 85, 247, 0.2);
+  }
+  .phase-tab-btn.tab-p1.active .phase-tab-indicator {
+    background: #c084fc;
+    box-shadow: 0 0 10px #c084fc;
+  }
+  .phase-tab-btn.tab-p1.active .phase-tab-name {
+    color: #f3e8ff;
+    text-shadow: 0 0 10px rgba(192, 132, 252, 0.5);
+  }
+
+  .phase-tab-btn.tab-p2.active {
+    background: rgba(255, 199, 44, 0.12);
+    box-shadow: inset 0 0 20px rgba(255, 199, 44, 0.15);
+  }
+  .phase-tab-btn.tab-p2.active .phase-tab-indicator {
+    background: #ffc72c;
+    box-shadow: 0 0 10px #ffc72c;
+  }
+  .phase-tab-btn.tab-p2.active .phase-tab-name {
+    color: #fffbeb;
+    text-shadow: 0 0 10px rgba(255, 199, 44, 0.5);
+  }
+
+  .phase-tab-btn.tab-p3.active {
+    background: rgba(56, 189, 248, 0.12);
+    box-shadow: inset 0 0 20px rgba(56, 189, 248, 0.15);
+  }
+  .phase-tab-btn.tab-p3.active .phase-tab-indicator {
+    background: #38bdf8;
+    box-shadow: 0 0 10px #38bdf8;
+  }
+  .phase-tab-btn.tab-p3.active .phase-tab-name {
+    color: #f0f9ff;
+    text-shadow: 0 0 10px rgba(56, 189, 248, 0.5);
+  }
+
+  /* Phase View Panels & Banners */
+  .phase-view-panel {
+    padding: 1.25rem;
+  }
+  .phase-banner {
+    border-radius: 8px;
+    padding: .85rem 1rem;
+    margin-bottom: .85rem;
+    border-left: 4px solid;
     font-size: .82rem;
+    line-height: 1.45;
+  }
+  .banner-p1 {
+    background: rgba(74, 21, 75, 0.35);
+    border-color: #c084fc;
+    color: #e9d5ff;
+  }
+  .banner-p2 {
+    background: rgba(255, 199, 44, 0.1);
+    border-color: #ffc72c;
+    color: #fef3c7;
+  }
+  .banner-p3 {
+    background: rgba(56, 189, 248, 0.1);
+    border-color: #38bdf8;
+    color: #e0f2fe;
+  }
+  .banner-badge {
+    font-weight: 800;
+    font-size: .8rem;
+    letter-spacing: .04em;
+    margin-bottom: .3rem;
+  }
+  .badge-p1 { color: #c084fc; }
+  .badge-p2 { color: #ffc72c; }
+  .badge-p3 { color: #38bdf8; }
+  .banner-meta {
+    margin-top: .4rem;
+    font-size: .76rem;
+    opacity: .9;
+  }
+
+  /* Code Editors */
+  .code-editor {
+    height: 250px;
+    font-family: SFMono-Regular, Consolas, Monaco, monospace;
+    font-size: .83rem;
     line-height: 1.45;
     background: #080312;
     color: #e9d5ff;
-    border: 1px solid rgba(168, 85, 247, 0.4);
+    border: 1px solid rgba(168, 85, 247, 0.35);
     border-radius: 8px;
     white-space: pre;
+    tab-size: 4;
   }
+  #filterRulesEditor {
+    color: #fef08a;
+    border-color: rgba(255, 199, 44, 0.35);
+  }
+  #opaRulesEditor {
+    color: #bae6fd;
+    border-color: rgba(56, 189, 248, 0.35);
+  }
+
   .panel-actions {
     display: flex;
-    gap: .75rem;
+    gap: .65rem;
     align-items: center;
     flex-wrap: wrap;
     margin-top: .75rem;
+  }
+  .btn-primary.btn-p2 {
+    background: linear-gradient(135deg, #78350f 0%, #b45309 50%, #d97706 100%);
+    border-color: var(--butler-gold-bright);
+    color: #fff;
+  }
+  .btn-primary.btn-p3 {
+    background: linear-gradient(135deg, #0369a1 0%, #0284c7 50%, #38bdf8 100%);
+    border-color: #38bdf8;
+    color: #fff;
+  }
+  .hud-tag-p1 {
+    border-color: rgba(168, 85, 247, 0.6);
+    color: #c084fc;
+    background: rgba(74, 21, 75, 0.6);
+  }
+  .hud-tag-p2 {
+    border-color: rgba(255, 199, 44, 0.6);
+    color: var(--butler-gold);
+    background: rgba(80, 50, 10, 0.6);
+  }
+  .hud-tag-p3 {
+    border-color: rgba(56, 189, 248, 0.6);
+    color: #38bdf8;
+    background: rgba(10, 50, 80, 0.6);
+  }
+  .feedback-msg {
+    font-size: .82rem;
+    font-weight: 600;
+    margin-left: auto;
+    font-family: SFMono-Regular, monospace;
   }
 
   /* Button Actions */
@@ -1161,7 +1391,7 @@ PAGE = """
       </div>
       <div>
         <label>Defense Architecture</label>
-        <select name="protection_mode">
+        <select name="protection_mode" id="protectionModeSelect" onchange="onProtectionModeChange()">
           <option value="direct" {{ 'selected' if protection_mode=='direct' else '' }}>Phase 1: Direct Neural Model (No Gateway)</option>
           <option value="static" {{ 'selected' if protection_mode=='static' else '' }}>Phase 2: Static Filters (filter_rules.py)</option>
           <option value="opa-context" {{ 'selected' if protection_mode=='opa-context' else '' }}>Phase 3: OPA Policy Enforcement</option>
@@ -1169,31 +1399,141 @@ PAGE = """
       </div>
     </div>
 
-    <!-- Live System Instructions Editor & Hot-Reload Panel -->
-    <div class="system-panel">
-      <div class="panel-header" onclick="toggleInstructionsPanel()">
-        <div class="panel-title">
-          <span>⚙️ NEURAL MODEL SYSTEM INSTRUCTIONS [HOT-RELOAD EDITOR]</span>
-          <span class="hud-tag" id="promptStatusBadge" style="font-size:0.7rem;">FILE SYNCED</span>
+    <!-- Butler 3-Phase Defense Studio (Browser Editing & Hot-Reload) -->
+    <div class="defense-studio">
+      <div class="studio-header">
+        <div class="studio-title-block">
+          <div class="studio-title">🛡️ BUTLER 3-PHASE DEFENSE STUDIO</div>
+          <div class="studio-subtitle">Live In-Browser Multi-Phase Defense Tuning &bull; Hot-Reload &bull; Syntax Validation</div>
         </div>
-        <span id="panelToggleIcon" style="font-size:0.85rem; color:var(--purple-muted);">▲ [COLLAPSE]</span>
+        <div class="studio-header-right">
+          <span class="hud-tag hud-tag-p1" id="activePhaseIndicator">ACTIVE EDIT: PHASE 1 (MODEL HARDENING)</span>
+        </div>
       </div>
-      <div class="panel-body" id="instructionsPanelBody">
-        <div style="font-size:0.8rem; color:var(--purple-muted); margin-bottom:0.5rem;">
-          Edit the model's active system instructions below. Level 1 (Ultra-Vulnerable) is completely compliant with zero guardrails. Click <strong>Save & Apply</strong> to hot-reload them into memory and disk immediately.
+
+      <!-- Prominent 3-Phase Navigation Tabs -->
+      <div class="phase-tabs-bar">
+        <!-- TAB 1: PHASE 1 -->
+        <button type="button" class="phase-tab-btn tab-p1 active" id="tabPhase1" onclick="switchPhaseTab(1)">
+          <div class="phase-tab-indicator ind-p1"></div>
+          <div class="phase-tab-body">
+            <div class="phase-tab-tag tag-p1">PHASE 1 &bull; NEURAL PROMPT</div>
+            <div class="phase-tab-name">🟣 Model Hardening</div>
+            <div class="phase-tab-target"><code>modelfiles/*.txt</code></div>
+          </div>
+        </button>
+
+        <!-- TAB 2: PHASE 2 -->
+        <button type="button" class="phase-tab-btn tab-p2" id="tabPhase2" onclick="switchPhaseTab(2)">
+          <div class="phase-tab-indicator ind-p2"></div>
+          <div class="phase-tab-body">
+            <div class="phase-tab-tag tag-p2">PHASE 2 &bull; GATEWAY PERIMETER</div>
+            <div class="phase-tab-name">🟡 Static Filter Rules</div>
+            <div class="phase-tab-target"><code>filter_rules.py</code></div>
+          </div>
+        </button>
+
+        <!-- TAB 3: PHASE 3 -->
+        <button type="button" class="phase-tab-btn tab-p3" id="tabPhase3" onclick="switchPhaseTab(3)">
+          <div class="phase-tab-indicator ind-p3"></div>
+          <div class="phase-tab-body">
+            <div class="phase-tab-tag tag-p3">PHASE 3 &bull; POLICY ENGINE</div>
+            <div class="phase-tab-name">🔵 OPA Context Policy</div>
+            <div class="phase-tab-target"><code>policies/rules.json</code></div>
+          </div>
+        </button>
+      </div>
+
+      <!-- PHASE 1 VIEW PANEL -->
+      <div class="phase-view-panel" id="viewPhase1">
+        <div class="phase-banner banner-p1">
+          <div class="banner-badge badge-p1">🟣 DEFENSE LAYER 1: NEURAL MODEL SYSTEM INSTRUCTIONS</div>
+          <div class="banner-text">
+            Tunes system instructions directly within the LLM prompt context across 4 hardening tiers (Level 1 Ultra-Vulnerable to Level 4 Paranoid). Attacks directly probe this prompt boundary.
+          </div>
+          <div class="banner-meta">
+            Target File: <code id="p1TargetFile">modelfiles/{{ persona }}_{{ variant }}.txt</code> &bull; Active Tier: <strong id="p1TierDisplay" style="color:var(--purple-neon);">{{ variant|upper }}</strong>
+          </div>
         </div>
-        <textarea name="system_prompt" id="systemPromptEditor" class="code-editor">{{ current_system_prompt }}</textarea>
+
+        <textarea name="system_prompt" id="systemPromptEditor" class="code-editor" spellcheck="false">{{ current_system_prompt }}</textarea>
+
         <div class="panel-actions">
-          <button type="button" class="btn-primary" style="padding:0.45rem 1rem; font-size:0.85rem;" onclick="saveSystemPrompt()">
+          <button type="button" class="btn-primary" onclick="saveSystemPrompt()">
             💾 Save & Apply System Prompt
           </button>
-          <button type="button" class="btn-secondary" style="padding:0.45rem 1rem; font-size:0.85rem;" onclick="reloadSystemPromptFromFile()">
-            🔄 Reload from File
+          <button type="button" class="btn-secondary" onclick="reloadSystemPromptFromFile()">
+            🔄 Reload from Disk
           </button>
-          <button type="button" class="btn-secondary" style="padding:0.45rem 1rem; font-size:0.85rem;" onclick="rebuildInOllama()">
+          <button type="button" class="btn-secondary" onclick="rebuildInOllama()">
             🔨 Rebuild in Ollama Runtime
           </button>
-          <span id="promptFeedbackMsg" style="font-size:0.82rem; font-weight:600; margin-left:auto;"></span>
+          <span class="feedback-msg" id="promptFeedbackMsg"></span>
+        </div>
+      </div>
+
+      <!-- PHASE 2 VIEW PANEL -->
+      <div class="phase-view-panel" id="viewPhase2" style="display:none;">
+        <div class="phase-banner banner-p2">
+          <div class="banner-badge badge-p2">🟡 DEFENSE LAYER 2: STATIC GATEWAY RULES (filter_rules.py)</div>
+          <div class="banner-text">
+            Perimeter defenses in Python. <code>INGRESS_BLACKLIST</code> intercepts prompt injections before invoking the LLM; <code>EGRESS_SECRETS</code> and <code>EGRESS_PATTERNS</code> prevent DLP leaks from leaving the gateway. Validates syntax before hot-reloading!
+          </div>
+          <div class="banner-meta">
+            Target File: <code>lab/scripts/filter_rules.py</code> &bull; Runtime Reload: <strong>Automated on Save & Request</strong>
+          </div>
+        </div>
+
+        <textarea id="filterRulesEditor" class="code-editor" spellcheck="false">{{ current_filter_rules }}</textarea>
+
+        <div class="panel-actions">
+          <button type="button" class="btn-primary btn-p2" onclick="saveFilterRules()">
+            💾 Save & Hot-Reload filter_rules.py
+          </button>
+          <button type="button" class="btn-secondary" onclick="reloadFilterRules()">
+            🔄 Reload from Disk
+          </button>
+          <button type="button" class="btn-secondary" onclick="loadFilterRulesPreset('calibrated')">
+            📋 Preset: Calibrated Benchmark (100%)
+          </button>
+          <button type="button" class="btn-secondary" onclick="loadFilterRulesPreset('scaffolded')">
+            🧩 Preset: Scaffolded (Starter)
+          </button>
+          <button type="button" class="btn-secondary" onclick="loadFilterRulesPreset('blank')">
+            📄 Preset: Blank
+          </button>
+          <span class="feedback-msg" id="filterRulesFeedbackMsg"></span>
+        </div>
+      </div>
+
+      <!-- PHASE 3 VIEW PANEL -->
+      <div class="phase-view-panel" id="viewPhase3" style="display:none;">
+        <div class="phase-banner banner-p3">
+          <div class="banner-badge badge-p3">🔵 DEFENSE LAYER 3: OPEN POLICY AGENT RULES (rules.json)</div>
+          <div class="banner-text">
+            Declarative JSON policy ingested by Open Policy Agent (OPA). Defines domain whitelists (<code>academic_tutoring</code>, <code>robotics_patrol</code>), blocked intents, risk flags, and confidence thresholds. Validates JSON before writing!
+          </div>
+          <div class="banner-meta">
+            Target File: <code>policies/rules.json</code> &bull; OPA Engine: <strong>Watching /policies filesystem</strong>
+          </div>
+        </div>
+
+        <textarea id="opaRulesEditor" class="code-editor" spellcheck="false">{{ current_opa_rules }}</textarea>
+
+        <div class="panel-actions">
+          <button type="button" class="btn-primary btn-p3" onclick="saveOpaRules()">
+            💾 Save & Apply rules.json
+          </button>
+          <button type="button" class="btn-secondary" onclick="formatOpaRules()">
+            ✨ Format & Validate JSON
+          </button>
+          <button type="button" class="btn-secondary" onclick="reloadOpaRules()">
+            🔄 Reload from Disk
+          </button>
+          <button type="button" class="btn-secondary" onclick="loadOpaRulesPreset('calibrated')">
+            📋 Reset to Calibrated Baseline
+          </button>
+          <span class="feedback-msg" id="opaRulesFeedbackMsg"></span>
         </div>
       </div>
     </div>
@@ -1291,26 +1631,88 @@ PAGE = """
       if (textarea) textarea.value = link.dataset.prompt;
     });
 
-    let panelOpen = true;
-    function toggleInstructionsPanel() {
-      panelOpen = !panelOpen;
-      const body = document.getElementById('instructionsPanelBody');
-      const icon = document.getElementById('panelToggleIcon');
-      body.style.display = panelOpen ? 'block' : 'none';
-      icon.innerText = panelOpen ? '▲ [COLLAPSE]' : '▼ [EXPAND]';
+    // -----------------------------------------------------------------
+    // Multi-Phase Studio Tab Switcher & Architecture Synchronization
+    // -----------------------------------------------------------------
+    function switchPhaseTab(phaseNum) {
+      // Update Tab Buttons
+      document.getElementById('tabPhase1').classList.toggle('active', phaseNum === 1);
+      document.getElementById('tabPhase2').classList.toggle('active', phaseNum === 2);
+      document.getElementById('tabPhase3').classList.toggle('active', phaseNum === 3);
+
+      // Update View Panels
+      document.getElementById('viewPhase1').style.display = (phaseNum === 1) ? 'block' : 'none';
+      document.getElementById('viewPhase2').style.display = (phaseNum === 2) ? 'block' : 'none';
+      document.getElementById('viewPhase3').style.display = (phaseNum === 3) ? 'block' : 'none';
+
+      // Update Active Header Badge
+      const ind = document.getElementById('activePhaseIndicator');
+      if (phaseNum === 1) {
+        ind.innerText = 'ACTIVE EDIT: PHASE 1 (MODEL HARDENING)';
+        ind.className = 'hud-tag hud-tag-p1';
+      } else if (phaseNum === 2) {
+        ind.innerText = 'ACTIVE EDIT: PHASE 2 (STATIC FILTER RULES)';
+        ind.className = 'hud-tag hud-tag-p2';
+      } else if (phaseNum === 3) {
+        ind.innerText = 'ACTIVE EDIT: PHASE 3 (OPA POLICY ENGINE)';
+        ind.className = 'hud-tag hud-tag-p3';
+      }
     }
 
+    function onProtectionModeChange() {
+      const sel = document.getElementById('protectionModeSelect');
+      if (!sel) return;
+      const val = sel.value;
+      if (val === 'direct') {
+        switchPhaseTab(1);
+      } else if (val === 'static') {
+        switchPhaseTab(2);
+      } else if (val === 'opa-context') {
+        switchPhaseTab(3);
+      }
+    }
+
+    // Tab key indent support for code editors
+    function enableTabIndent(textareaId, spaces = 4) {
+      const ta = document.getElementById(textareaId);
+      if (!ta) return;
+      ta.addEventListener('keydown', function(e) {
+        if (e.key === 'Tab') {
+          e.preventDefault();
+          const start = this.selectionStart;
+          const end = this.selectionEnd;
+          const indent = ' '.repeat(spaces);
+          this.value = this.value.substring(0, start) + indent + this.value.substring(end);
+          this.selectionStart = this.selectionEnd = start + spaces;
+        }
+      });
+    }
+
+    enableTabIndent('systemPromptEditor', 4);
+    enableTabIndent('filterRulesEditor', 4);
+    enableTabIndent('opaRulesEditor', 2);
+
+    // -----------------------------------------------------------------
+    // Phase 1: Model Hardening Handlers
+    // -----------------------------------------------------------------
     async function onTargetModelChange() {
       let persona = document.getElementById('personaSelect').value;
       if (persona === 'unitree') persona = 'grizzdog';
       const variant = document.getElementById('variantSelect').value;
+      
+      const fileCode = document.getElementById('p1TargetFile');
+      if (fileCode) fileCode.innerText = `modelfiles/${persona}_${variant}.txt`;
+      const tierDisplay = document.getElementById('p1TierDisplay');
+      if (tierDisplay) tierDisplay.innerText = variant.toUpperCase();
+
       const res = await fetch(`/api/system_prompt?persona=${persona}&variant=${variant}`);
       const data = await res.json();
       if (data.status === 'ok') {
         document.getElementById('systemPromptEditor').value = data.system_prompt;
-        const badge = document.getElementById('promptStatusBadge');
-        badge.innerText = 'LOADED: ' + persona.toUpperCase() + ' (' + variant + ')';
-        badge.style.color = '#c084fc';
+        const msg = document.getElementById('promptFeedbackMsg');
+        msg.innerText = '✓ Loaded: ' + persona.toUpperCase() + ' (' + variant + ')';
+        msg.style.color = '#c084fc';
+        setTimeout(() => { msg.innerText = ''; }, 3000);
       }
     }
 
@@ -1322,7 +1724,7 @@ PAGE = """
       const msg = document.getElementById('promptFeedbackMsg');
       
       msg.innerText = 'Saving...';
-      msg.style.color = '#38bdf8';
+      msg.style.color = '#c084fc';
 
       try {
         const res = await fetch('/api/system_prompt', {
@@ -1332,9 +1734,8 @@ PAGE = """
         });
         const data = await res.json();
         if (data.status === 'ok') {
-          msg.innerText = '✓ Saved & hot-reloaded into gateway!';
+          msg.innerText = '✓ Saved & hot-reloaded into gateway memory!';
           msg.style.color = '#34d399';
-          document.getElementById('promptStatusBadge').innerText = 'LIVE & APPLIED';
           setTimeout(() => { msg.innerText = ''; }, 4000);
         } else {
           msg.innerText = '✗ Error: ' + (data.error || 'Failed');
@@ -1349,7 +1750,7 @@ PAGE = """
     async function reloadSystemPromptFromFile() {
       const msg = document.getElementById('promptFeedbackMsg');
       msg.innerText = 'Reloading from disk...';
-      msg.style.color = '#38bdf8';
+      msg.style.color = '#c084fc';
       await onTargetModelChange();
       msg.innerText = '✓ Reloaded original prompt from disk.';
       msg.style.color = '#34d399';
@@ -1381,6 +1782,177 @@ PAGE = """
       }
     }
 
+    // -----------------------------------------------------------------
+    // Phase 2: Static Gateway Rules (filter_rules.py) Handlers
+    // -----------------------------------------------------------------
+    async function saveFilterRules() {
+      const code = document.getElementById('filterRulesEditor').value;
+      const msg = document.getElementById('filterRulesFeedbackMsg');
+      msg.innerText = 'Validating Python syntax & saving...';
+      msg.style.color = '#ffc72c';
+
+      try {
+        const res = await fetch('/api/filter_rules', {
+          method: 'POST',
+          headers: {'Content-Type': 'application/json'},
+          body: JSON.stringify({ code })
+        });
+        const data = await res.json();
+        if (data.status === 'ok') {
+          msg.innerText = '✓ ' + data.message;
+          msg.style.color = '#34d399';
+          setTimeout(() => { msg.innerText = ''; }, 4000);
+        } else {
+          msg.innerText = '✗ ' + (data.error || 'Failed to save');
+          msg.style.color = '#f43f5e';
+        }
+      } catch (err) {
+        msg.innerText = '✗ Network error: ' + err;
+        msg.style.color = '#f43f5e';
+      }
+    }
+
+    async function reloadFilterRules() {
+      const msg = document.getElementById('filterRulesFeedbackMsg');
+      msg.innerText = 'Reloading from disk...';
+      msg.style.color = '#ffc72c';
+      try {
+        const res = await fetch('/api/filter_rules');
+        const data = await res.json();
+        if (data.status === 'ok') {
+          document.getElementById('filterRulesEditor').value = data.code;
+          msg.innerText = '✓ Reloaded filter_rules.py from disk';
+          msg.style.color = '#34d399';
+          setTimeout(() => { msg.innerText = ''; }, 3000);
+        }
+      } catch (err) {
+        msg.innerText = '✗ Failed to reload: ' + err;
+        msg.style.color = '#f43f5e';
+      }
+    }
+
+    async function loadFilterRulesPreset(preset) {
+      if (!confirm(`Load Phase 2 preset '${preset}'? This will replace your current filter_rules.py.`)) return;
+      const msg = document.getElementById('filterRulesFeedbackMsg');
+      msg.innerText = `Loading '${preset}' preset...`;
+      msg.style.color = '#ffc72c';
+      try {
+        const res = await fetch('/api/filter_rules/preset', {
+          method: 'POST',
+          headers: {'Content-Type': 'application/json'},
+          body: JSON.stringify({ preset })
+        });
+        const data = await res.json();
+        if (data.status === 'ok') {
+          document.getElementById('filterRulesEditor').value = data.code;
+          msg.innerText = '✓ ' + data.message;
+          msg.style.color = '#34d399';
+          setTimeout(() => { msg.innerText = ''; }, 4000);
+        } else {
+          msg.innerText = '✗ ' + (data.error || 'Failed to load preset');
+          msg.style.color = '#f43f5e';
+        }
+      } catch (err) {
+        msg.innerText = '✗ Preset error: ' + err;
+        msg.style.color = '#f43f5e';
+      }
+    }
+
+    // -----------------------------------------------------------------
+    // Phase 3: OPA Policy Rules (rules.json) Handlers
+    // -----------------------------------------------------------------
+    async function saveOpaRules() {
+      const code = document.getElementById('opaRulesEditor').value;
+      const msg = document.getElementById('opaRulesFeedbackMsg');
+      msg.innerText = 'Validating JSON syntax & saving...';
+      msg.style.color = '#38bdf8';
+
+      try {
+        const res = await fetch('/api/opa_rules', {
+          method: 'POST',
+          headers: {'Content-Type': 'application/json'},
+          body: JSON.stringify({ code })
+        });
+        const data = await res.json();
+        if (data.status === 'ok') {
+          if (data.code) document.getElementById('opaRulesEditor').value = data.code;
+          msg.innerText = '✓ ' + data.message;
+          msg.style.color = '#34d399';
+          setTimeout(() => { msg.innerText = ''; }, 4000);
+        } else {
+          msg.innerText = '✗ ' + (data.error || 'Failed to save');
+          msg.style.color = '#f43f5e';
+        }
+      } catch (err) {
+        msg.innerText = '✗ Network error: ' + err;
+        msg.style.color = '#f43f5e';
+      }
+    }
+
+    function formatOpaRules() {
+      const editor = document.getElementById('opaRulesEditor');
+      const msg = document.getElementById('opaRulesFeedbackMsg');
+      try {
+        const parsed = JSON.parse(editor.value);
+        editor.value = JSON.stringify(parsed, null, 2);
+        msg.innerText = '✓ Valid JSON formatted cleanly';
+        msg.style.color = '#34d399';
+        setTimeout(() => { msg.innerText = ''; }, 3000);
+      } catch (err) {
+        msg.innerText = '✗ JSON Syntax Error: ' + err.message;
+        msg.style.color = '#f43f5e';
+      }
+    }
+
+    async function reloadOpaRules() {
+      const msg = document.getElementById('opaRulesFeedbackMsg');
+      msg.innerText = 'Reloading from disk...';
+      msg.style.color = '#38bdf8';
+      try {
+        const res = await fetch('/api/opa_rules');
+        const data = await res.json();
+        if (data.status === 'ok') {
+          document.getElementById('opaRulesEditor').value = data.code;
+          msg.innerText = '✓ Reloaded rules.json from disk';
+          msg.style.color = '#34d399';
+          setTimeout(() => { msg.innerText = ''; }, 3000);
+        }
+      } catch (err) {
+        msg.innerText = '✗ Failed to reload: ' + err;
+        msg.style.color = '#f43f5e';
+      }
+    }
+
+    async function loadOpaRulesPreset(preset) {
+      if (!confirm(`Reset Phase 3 rules to calibrated baseline? This will overwrite rules.json.`)) return;
+      const msg = document.getElementById('opaRulesFeedbackMsg');
+      msg.innerText = 'Resetting rules.json...';
+      msg.style.color = '#38bdf8';
+      try {
+        const res = await fetch('/api/opa_rules/preset', {
+          method: 'POST',
+          headers: {'Content-Type': 'application/json'},
+          body: JSON.stringify({ preset })
+        });
+        const data = await res.json();
+        if (data.status === 'ok') {
+          document.getElementById('opaRulesEditor').value = data.code;
+          msg.innerText = '✓ ' + data.message;
+          msg.style.color = '#34d399';
+          setTimeout(() => { msg.innerText = ''; }, 4000);
+        } else {
+          msg.innerText = '✗ ' + (data.error || 'Failed to reset preset');
+          msg.style.color = '#f43f5e';
+        }
+      } catch (err) {
+        msg.innerText = '✗ Preset error: ' + err;
+        msg.style.color = '#f43f5e';
+      }
+    }
+
+    // -----------------------------------------------------------------
+    // Benchmark Battery
+    // -----------------------------------------------------------------
     async function runBenchmark() {
       const box = document.getElementById('benchmarkBox');
       box.style.display = 'block';
@@ -1434,6 +2006,8 @@ def index():
         LIVE_SYSTEM_PROMPTS[(persona, variant)] = submitted_system_prompt
 
     current_system_prompt = get_active_system_prompt(persona, variant)
+    current_filter_rules = read_file_safely(FILTER_RULES_PATH)
+    current_opa_rules = read_file_safely(RULES_JSON_PATH)
     model_target = resolve_model_target(persona, variant)
 
     if protection_mode == "direct":
@@ -1463,10 +2037,101 @@ def index():
         protection_mode=protection_mode,
         prompt=prompt,
         current_system_prompt=current_system_prompt,
+        current_filter_rules=current_filter_rules,
+        current_opa_rules=current_opa_rules,
         result=result,
         examples=EXAMPLE_PROMPTS,
         log=recent_log,
     )
+
+
+@app.route("/api/filter_rules", methods=["GET", "POST"])
+def api_filter_rules():
+    if request.method == "GET":
+        code = read_file_safely(FILTER_RULES_PATH)
+        return jsonify({
+            "status": "ok",
+            "code": code,
+            "filepath": FILTER_RULES_PATH,
+        })
+    payload = request.get_json(force=True, silent=True) or {}
+    code = payload.get("code", "")
+    if not code.strip():
+        return jsonify({"status": "error", "error": "Filter rules code cannot be empty"}), 400
+    success, msg = save_filter_rules_to_disk(code)
+    if not success:
+        return jsonify({"status": "error", "error": msg}), 400
+    return jsonify({
+        "status": "ok",
+        "message": msg,
+        "filepath": FILTER_RULES_PATH,
+    })
+
+
+@app.route("/api/filter_rules/preset", methods=["POST"])
+def api_filter_rules_preset():
+    payload = request.get_json(force=True, silent=True) or {}
+    preset_name = payload.get("preset", "calibrated")
+    preset_file = os.path.join(PRESETS_DIR, f"rules_{preset_name}.py")
+    if not os.path.exists(preset_file):
+        return jsonify({"status": "error", "error": f"Unknown preset: {preset_name}"}), 404
+    code = read_file_safely(preset_file)
+    success, msg = save_filter_rules_to_disk(code)
+    if not success:
+        return jsonify({"status": "error", "error": msg}), 400
+    return jsonify({
+        "status": "ok",
+        "preset": preset_name,
+        "code": code,
+        "message": f"Phase 2 loaded preset '{preset_name}' and hot-reloaded into gateway.",
+    })
+
+
+@app.route("/api/opa_rules", methods=["GET", "POST"])
+def api_opa_rules():
+    if request.method == "GET":
+        code = read_file_safely(RULES_JSON_PATH)
+        return jsonify({
+            "status": "ok",
+            "code": code,
+            "filepath": RULES_JSON_PATH,
+        })
+    payload = request.get_json(force=True, silent=True) or {}
+    code = payload.get("code", "")
+    if not code.strip():
+        return jsonify({"status": "error", "error": "OPA rules JSON cannot be empty"}), 400
+    success, msg = save_opa_rules_to_disk(code)
+    if not success:
+        return jsonify({"status": "error", "error": msg}), 400
+    formatted = read_file_safely(RULES_JSON_PATH)
+    return jsonify({
+        "status": "ok",
+        "message": msg,
+        "code": formatted,
+        "filepath": RULES_JSON_PATH,
+    })
+
+
+@app.route("/api/opa_rules/preset", methods=["POST"])
+def api_opa_rules_preset():
+    payload = request.get_json(force=True, silent=True) or {}
+    preset_name = payload.get("preset", "calibrated")
+    preset_file = os.path.join(POLICIES_DIR, f"rules_{preset_name}.json")
+    if not os.path.exists(preset_file):
+        preset_file = os.path.join(POLICIES_DIR, "rules_calibrated.json")
+    if not os.path.exists(preset_file):
+        return jsonify({"status": "error", "error": "Calibrated OPA rules preset not found"}), 404
+    code = read_file_safely(preset_file)
+    success, msg = save_opa_rules_to_disk(code)
+    if not success:
+        return jsonify({"status": "error", "error": msg}), 400
+    formatted = read_file_safely(RULES_JSON_PATH)
+    return jsonify({
+        "status": "ok",
+        "preset": preset_name,
+        "code": formatted,
+        "message": "Phase 3 rules.json reset to calibrated baseline and applied to OPA.",
+    })
 
 
 @app.route("/api/system_prompt", methods=["GET", "POST"])
