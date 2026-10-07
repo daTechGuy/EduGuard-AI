@@ -73,7 +73,35 @@ No local Python install is required if running via Docker; the gateway runs insi
 
 #### macOS (Apple Silicon M1/M2/M3/M4 & Intel)
 
-macOS requires specific configuration to avoid known port conflicts and VM memory exhaustion:
+macOS requires specific configuration to avoid known port conflicts, missing CLI paths, and VM memory exhaustion:
+
+##### 0. Fix "docker: command not found" after Installation — CRITICAL
+If you just installed Docker Desktop and it is running, but Terminal says `docker: command not found`, Docker Desktop has not symlinked the CLI tools into your system `$PATH` yet:
+
+- **Method A (Easiest via Docker Settings)**:
+  1. Open **Docker Desktop**.
+  2. Click the **Settings (gear icon)** in the top-right corner.
+  3. Go to **Advanced**.
+  4. Under **Choose how to install Docker CLI tools**, select **System (requires password)**.
+  5. Click **Apply & restart** and enter your macOS administrator password when prompted.
+  6. **Restart your Terminal app** (quit with `Cmd + Q` and reopen).
+
+- **Method B (Quick 1-Line Terminal Fix)**:
+  Run this command in Terminal to create the symlinks directly:
+  ```bash
+  sudo ln -sf /Applications/Docker.app/Contents/Resources/bin/docker /usr/local/bin/docker
+  sudo ln -sf /Applications/Docker.app/Contents/Resources/bin/docker-compose /usr/local/bin/docker-compose
+  ```
+  Or if Docker put tools in `~/.docker/bin`, add it to your shell:
+  ```bash
+  echo 'export PATH="$HOME/.docker/bin:$PATH"' >> ~/.zshrc && source ~/.zshrc
+  ```
+
+- **Verify in Terminal**:
+  ```bash
+  docker --version
+  docker compose version
+  ```
 
 ##### 1. Disable AirPlay Receiver (Port 5000 Conflict) — CRITICAL
 By default, macOS Monterey (12.x), Ventura (13.x), Sonoma (14.x), and Sequoia (15.x) run Apple's **AirPlay Receiver** system service on port **5000**. If left enabled, Docker will fail with `bind: address already in use: 5000` or the browser will return a 403 Forbidden.
@@ -263,6 +291,7 @@ $$\text{Composite Score} = (0.60 \times \text{Attack Catch Rate}) + (0.40 \times
 
 | Problem | Likely Cause / Solution |
 |---|---|
+| **Mac**: `docker: command not found` | Docker CLI tools are not symlinked in your PATH. In **Docker Desktop > Settings > Advanced**, select **System (requires password)** and click **Apply & restart**, or run `sudo ln -sf /Applications/Docker.app/Contents/Resources/bin/docker /usr/local/bin/docker`. Restart Terminal. |
 | **Mac**: Port 5000 `address already in use` | macOS **AirPlay Receiver** binds to port 5000. Turn it off in **System Settings > General > AirDrop & AirPlay > AirPlay Receiver (OFF)**, or run `WEB_PORT=5001 docker compose up -d`. |
 | **Mac**: Port 11434 `address already in use` | Native Ollama Mac app is running in the menu bar. Run `pkill ollama` in Terminal or quit Ollama from the menu bar. |
 | **Mac**: Container killed (`exit 137`) / Docker hangs / freeze | Docker VM ran out of memory (OOM). Allocate at least **8 GB RAM** in **Docker Desktop Settings > Resources**. |
