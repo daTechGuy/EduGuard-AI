@@ -74,6 +74,8 @@ No local Python install is required if running via Docker; the gateway runs insi
 ### OS Readiness
 
 #### Windows
+
+##### Option A: Docker Desktop (WSL 2)
 - Docker Desktop requires hardware virtualization.
 - Ensure **Virtualization Technology** (Intel VT-x or AMD-V) is enabled in BIOS/UEFI.
 - If using WSL2, open PowerShell as Administrator and run:
@@ -81,6 +83,33 @@ No local Python install is required if running via Docker; the gateway runs insi
   wsl --install
   ```
 - Restart your computer and ensure **Use the WSL 2 based engine** is checked in Docker Desktop Settings.
+
+##### Option B: Native Windows Setup (Fastest — No Docker, WSL, or Hyper-V Required)
+If you do not have WSL installed or prefer running directly on Windows with native GPU acceleration:
+1. **Install Ollama for Windows**: Download and run the installer from [ollama.com/download/windows](https://ollama.com/download/windows). Ollama runs in your system tray at `http://localhost:11434`.
+2. **Pull the base model**:
+   ```powershell
+   ollama pull llama3.2
+   ```
+3. **Build the lab personas**:
+   ```powershell
+   ollama create grizzdog_vulnerable -f lab/modelfiles/grizzdog_vulnerable.txt
+   ollama create grizzdog_basic      -f lab/modelfiles/grizzdog_basic.txt
+   ollama create grizzdog_hardened   -f lab/modelfiles/grizzdog_hardened.txt
+   ollama create grizzdog_paranoid   -f lab/modelfiles/grizzdog_paranoid.txt
+   ollama create vulnerable_bot      -f lab/modelfiles/vulnerable.txt
+   ollama create hardened_bot        -f lab/modelfiles/hardened.txt
+   ollama create grader_vulnerable   -f lab/modelfiles/grader_vulnerable.txt
+   ollama create grader_hardened     -f lab/modelfiles/grader_hardened.txt
+   ollama create registrar_vulnerable -f lab/modelfiles/registrar_vulnerable.txt
+   ollama create registrar_hardened   -f lab/modelfiles/registrar_hardened.txt
+   ```
+4. **Install Python dependencies & run gateway**:
+   ```powershell
+   pip install -r requirements.txt
+   python lab/scripts/secure_gateway.py
+   ```
+   Open `http://localhost:5000` in your browser.
 
 #### macOS (Apple Silicon M1/M2/M3/M4 & Intel)
 

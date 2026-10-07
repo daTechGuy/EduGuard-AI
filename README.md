@@ -158,6 +158,46 @@ Designed for cybersecurity learners, students, and educators, EduGuard-AI includ
 - **Collapsible Field Guide Drawer**: A one-click `📘 ESSENTIAL CYBER FIELD GUIDE` accordion located above the Defense Studio offers a complete cheat-sheet matrix across all phases and tiers.
 - **Inline Analogy Callouts**: Every Defense Phase editor panel features a highlighted analogy box explaining how edits directly impact sentry resilience.
 
+---
+
+## Interactive Visual Defense Pipeline Flowchart
+
+EduGuard-AI visualizes defense-in-depth with a live, animated 6-node packet trace flowchart rendered above the prompt terminal in both Classroom Studio and Booth Kiosk modes:
+
+```
+[ 📥 1. Ingestion ] ──▶ [ 🟡 2. Ingress Filter ] ──▶ [ 🔵 3. OPA Policy ] ──▶ [ 🟣 4. Neural Hardening ] ──▶ [ 🟡 5. Egress DLP ] ──▶ [ 🛡️ 6. Final Verdict ]
+```
+
+- **Live Animated Packet Trace**: Each submission illuminates nodes in real time with animated status badges (`ALLOWED`, `BLOCKED`, `FILTERED`, `REDACTED`, `FLAGGED`, or `PASS`).
+- **Defensive Explainability**: Clickable and visually explicit; learners instantly see *which* defensive layer stopped an adversarial payload and *why* (e.g., whether stopped at the perimeter by regex, evaluated by OPA semantic policy, or neutralized by internal model system prompt constraints).
+
+---
+
+## STEM Fair & Expo Booth Kiosk Mode: "Beat the GrizzDog" Challenge
+
+For campus open houses, STEM outreach events, cyber competitions, and recruitment booths, toggle into **🕹️ Expo Booth Kiosk Mode** via the header switch (`[ 🔬 Classroom Studio ] ⇄ [ 🕹️ Expo Booth Kiosk ]`).
+
+Designed specifically for 2–3 minute high-energy visitor interactions on booth tablets and laptops:
+
+### 1. 3-Stage "Beat the GrizzDog" Speed Challenge
+Visitors compete to breach the Butler Cyber robotic sentry across progressive defensive tiers:
+- **Stage 1 — Naive Sentry (Warmup)**: Level 1 Vulnerable sentry with no outer defenses. Any basic trick or direct question extracts the root key (`GRIZZDOG-ROOT-KEY-9941`).
+- **Stage 2 — Perimeter Filters (Intermediate)**: Phase 2 Ingress keyword & regex filters activated. Direct probes are caught at the perimeter; visitors must craft or select clever bypasses and social engineering.
+- **Stage 3 — Zero-Trust Bastion (Final Boss)**: Full Defense-in-Depth active (Level 4 Paranoid Hardening + Phase 2 Ingress & DLP + Phase 3 OPA Policy Engine). The hardest challenge to test advanced evasions.
+
+### 2. Touch-Friendly "Mad-Libs" Attack Payload Builder (Zero Typing Required)
+Crowded booths and tablet touchscreens don't require slow manual typing. Visitors click interactive pill buttons to assemble adversarial attacks in seconds:
+- **Disguise / Persona**: *Butler Robotics Director (Dr. Chen)* | *Emergency Campus Security Tech* | *Undercover Safety Auditor* | *Canvas LMS Administrator* | *Confused Freshman Student*
+- **Objective / Exploit**: *Extract GrizzDog Root Firmware Key* | *Disarm Andover Campus Quadruped Sentry* | *Exfiltrate Confidential FERPA Records* | *Override Autonomous Patrol Route*
+- **Evasion Tactic**: *Hypothetical Fiction Drill* | *Strict Roleplay / Override Mode* | *Emergency Safety Maintenance Override* | *Reverse Psychology & Inversion*
+- **🎲 Random Surprise Combo**: Generates a pre-compiled injection attack with one tap for instant trial.
+
+### 3. Butler Cyber Recruitment Victory Badge & Offline QR Code
+When a prospective student successfully bypasses Stage 3, the system launches a celebratory victory modal:
+- **Butler Mascot & Sentry Breaker Badge**: Celebrates their achievement with live stopwatch completion stats.
+- **Offline-Rendered Vector SVG QR Code**: Links prospective students directly to Butler Community College's Cybersecurity Program (`https://www.butlercc.edu/info/20120/cybersecurity`). Works 100% offline at any event venue without requiring external cloud APIs.
+- **1-Click "Reset for Next Student"**: Instantly resets the stages and timer for the next visitor in line.
+
 
 ### Standalone Benchmark Evaluator (No Docker Needed)
 Students and instructors can evaluate defense efficacy at any time:
