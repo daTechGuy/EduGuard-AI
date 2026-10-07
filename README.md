@@ -148,6 +148,17 @@ EduGuard-AI features a live, in-browser **3-Phase Defense Architecture Studio** 
 - **Defense Architecture Dropdown Sync**: Switching the *Defense Architecture* dropdown automatically focuses and opens the corresponding Phase editor tab.
 - **Editor Ergonomics**: Monospace code editor with `Tab` key indent support (4 spaces for Python, 2 spaces for JSON), instant save feedback, and reload-from-disk capabilities.
 
+### 🎓 High School Plain-English Explainer & Hover System
+Designed for high school STEM/cyber camps and introductory college cybersecurity courses, EduGuard-AI includes plain-English conceptual breakdowns with relatable school analogies:
+- **Interactive Hover Tooltips (`ⓘ` Badges)**: Hovering over **Model Hardening**, **Defense Architecture**, **Unit Persona**, any **Hardening Level**, any **Defense Phase Tab**, or **Mission Categories** displays an instant explainer card with a real-world high school analogy:
+  - **Phase 1 (Model Hardening)**: *Student Integrity Analogy* — Training the student's inner conscience to refuse peer pressure and cheating tricks ("No, I cannot break the honor code").
+  - **Phase 2 (Static Filters)**: *Backpack Scanner Analogy* — Front-door security checking for contraband weapons before entering, and checking that no school property is stolen when leaving.
+  - **Phase 3 (OPA Policy Engine)**: *Principal's Hall Pass Analogy* — Even with a clean bag, students cannot enter restricted areas without a signed hall pass confirming proper authorization.
+  - **4 Hardening Tiers**: From *Level 1 (leaving your locker wide open with your phone and money on display)* to *Level 4 (a bank vault with laser tripwires)*.
+- **Collapsible Field Guide Drawer**: A one-click `🎓 HIGH SCHOOL CYBER FIELD GUIDE` accordion located above the Defense Studio offers a complete cheat-sheet matrix across all phases and tiers.
+- **Inline Analogy Callouts**: Every Defense Phase editor panel features a highlighted analogy box explaining how edits directly impact sentry resilience.
+
+
 ### Standalone Benchmark Evaluator (No Docker Needed)
 Students and instructors can evaluate defense efficacy at any time:
 

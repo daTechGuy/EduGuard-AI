@@ -1263,6 +1263,168 @@ PAGE = """
     font-family: SFMono-Regular, monospace;
   }
 
+  /* ----------------------------------------------------------------- */
+  /* High School Plain-English Hover Tooltips & Explainer System       */
+  /* ----------------------------------------------------------------- */
+  .hs-tooltip-container {
+    position: fixed;
+    display: none;
+    max-width: 400px;
+    background: linear-gradient(135deg, rgba(30, 12, 52, 0.98) 0%, rgba(14, 5, 28, 0.99) 100%);
+    border: 2px solid var(--butler-gold);
+    border-radius: 12px;
+    padding: 1rem 1.15rem;
+    box-shadow: 0 12px 40px rgba(0,0,0,0.9), 0 0 20px rgba(255, 199, 44, 0.35);
+    z-index: 999999;
+    pointer-events: none;
+    font-size: .84rem;
+    line-height: 1.48;
+    color: #fbf5ef;
+    transition: opacity .15s ease-out, transform .15s ease-out;
+    opacity: 0;
+    transform: translateY(4px);
+  }
+  .hs-tooltip-container.visible {
+    display: block;
+    opacity: 1;
+    transform: translateY(0);
+  }
+  .hs-tooltip-title {
+    font-size: .95rem;
+    font-weight: 800;
+    color: var(--butler-gold);
+    display: flex;
+    align-items: center;
+    gap: .45rem;
+    margin-bottom: .45rem;
+    letter-spacing: .02em;
+    border-bottom: 1px solid rgba(255, 199, 44, 0.3);
+    padding-bottom: .35rem;
+  }
+  .hs-tooltip-body {
+    color: #e9d5ff;
+    margin-bottom: .55rem;
+  }
+  .hs-tooltip-analogy {
+    background: rgba(74, 21, 75, 0.6);
+    border-left: 3px solid #ffc72c;
+    padding: .5rem .75rem;
+    border-radius: 4px;
+    color: #fef08a;
+    font-size: .8rem;
+    line-height: 1.42;
+  }
+  .hs-tooltip-analogy strong {
+    color: #ffd700;
+  }
+
+  /* Tooltip trigger badges */
+  .hs-tip-badge {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 18px;
+    height: 18px;
+    border-radius: 50%;
+    background: rgba(255, 199, 44, 0.2);
+    border: 1px solid var(--butler-gold);
+    color: var(--butler-gold);
+    font-size: .7rem;
+    font-weight: 800;
+    margin-left: .4rem;
+    cursor: help;
+    vertical-align: middle;
+    transition: all .2s ease;
+  }
+  .hs-tip-badge:hover {
+    background: var(--butler-gold);
+    color: #090412;
+    box-shadow: 0 0 12px var(--butler-gold);
+  }
+
+  /* High School Field Guide Drawer */
+  .hs-guide-banner {
+    background: linear-gradient(135deg, rgba(60, 18, 70, 0.65) 0%, rgba(20, 8, 38, 0.85) 100%);
+    border: 1px solid rgba(255, 199, 44, 0.4);
+    border-radius: 10px;
+    margin-bottom: 1.25rem;
+    overflow: hidden;
+    box-shadow: 0 4px 18px rgba(0,0,0,0.4);
+  }
+  .hs-guide-toggle {
+    padding: .75rem 1.15rem;
+    cursor: pointer;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    user-select: none;
+    background: rgba(40, 11, 51, 0.7);
+    transition: background .2s ease;
+  }
+  .hs-guide-toggle:hover {
+    background: rgba(74, 21, 75, 0.9);
+  }
+  .hs-guide-title {
+    font-size: .88rem;
+    font-weight: 800;
+    color: var(--butler-gold);
+    display: flex;
+    align-items: center;
+    gap: .5rem;
+    letter-spacing: .02em;
+  }
+  .hs-guide-content {
+    padding: 1.15rem;
+    border-top: 1px solid rgba(255, 199, 44, 0.2);
+    display: grid;
+    grid-template-columns: repeat(2, 1fr);
+    gap: 1rem;
+    background: rgba(12, 5, 24, 0.8);
+  }
+  @media (max-width: 820px) {
+    .hs-guide-content { grid-template-columns: 1fr; }
+  }
+  .hs-card {
+    background: rgba(22, 9, 40, 0.7);
+    border: 1px solid var(--border-glow);
+    border-radius: 8px;
+    padding: .9rem 1rem;
+  }
+  .hs-card-p1 { border-left: 4px solid #c084fc; }
+  .hs-card-p2 { border-left: 4px solid #ffc72c; }
+  .hs-card-p3 { border-left: 4px solid #38bdf8; }
+  .hs-card-tiers { border-left: 4px solid #34d399; }
+  .hs-card-title {
+    font-size: .85rem;
+    font-weight: 800;
+    margin-bottom: .35rem;
+  }
+  .hs-card-text {
+    font-size: .8rem;
+    line-height: 1.45;
+    color: #e9d5ff;
+    margin-bottom: .45rem;
+  }
+  .hs-card-analogy {
+    font-size: .78rem;
+    color: #fef08a;
+    background: rgba(74, 21, 75, 0.5);
+    border-left: 2px solid #ffc72c;
+    padding: .4rem .6rem;
+    border-radius: 4px;
+    line-height: 1.4;
+  }
+  .hs-callout {
+    margin-top: .6rem;
+    background: rgba(74, 21, 75, 0.45);
+    border-left: 3px solid #ffc72c;
+    padding: .45rem .65rem;
+    border-radius: 4px;
+    color: #fef08a;
+    font-size: .78rem;
+    line-height: 1.4;
+  }
+
   /* Button Actions */
   .btn-row {
     display: flex;
@@ -1426,6 +1588,13 @@ PAGE = """
 </head>
 <body>
 
+  <!-- Floating High School Plain-English Tooltip -->
+  <div id="hsTooltip" class="hs-tooltip-container">
+    <div class="hs-tooltip-title" id="hsTipTitle"></div>
+    <div class="hs-tooltip-body" id="hsTipDesc"></div>
+    <div class="hs-tooltip-analogy" id="hsTipAnalogy"></div>
+  </div>
+
   <!-- Butler GrizzDog HUD Header -->
   <div class="cyber-hud">
     <div class="hud-top">
@@ -1455,7 +1624,13 @@ PAGE = """
   <form method="POST" id="mainForm">
     <div class="row">
       <div>
-        <label>Unit Persona</label>
+        <label>
+          Unit Persona
+          <span class="hs-tip-badge" 
+                data-hs-title="🤖 AI Sentry Persona" 
+                data-hs-desc="Defines the specific campus job, personality, and operational boundary assigned to this AI agent." 
+                data-hs-analogy="🏫 School Analogy: Choosing whether the student is on campus hallway patrol (GrizzDog), helping students in tutoring lab (Sage), grading quizzes (GraderBot), or working in admissions records (Morgan).">ⓘ</span>
+        </label>
         <select name="persona" id="personaSelect" onchange="onTargetModelChange()">
           <option value="grizzdog" {{ 'selected' if persona in ['grizzdog', 'unitree'] else '' }}>🐕 GrizzDog (Butler Grizzly Quadruped Sentry - Andover)</option>
           <option value="ta" {{ 'selected' if persona=='ta' else '' }}>🎓 Course TA Bot ("Sage" - Butler Cybersecurity & CIT)</option>
@@ -1464,21 +1639,110 @@ PAGE = """
         </select>
       </div>
       <div>
-        <label>Hardening Level (4 Tiers)</label>
+        <label>
+          Hardening Level (4 Tiers)
+          <span class="hs-tip-badge" 
+                data-hs-title="🧠 Model Hardening (AI Brain Defense)" 
+                data-hs-desc="Model Hardening trains the AI's internal conscience and resistance to peer pressure, hypothetical tricks, and prompt injection attacks directly inside its neural brain." 
+                data-hs-analogy="🏫 Student Integrity Analogy: Level 1 is a naive freshman who hands over homework answers whenever asked; Level 4 is an ironclad student who follows the honor code 100% no matter what peer pressure or tricks someone tries.">ⓘ</span>
+        </label>
         <select name="variant" id="variantSelect" onchange="onTargetModelChange()">
-          <option value="vulnerable" {{ 'selected' if variant=='vulnerable' else '' }}>Level 1: Ultra-Vulnerable / Naive (Zero Defenses)</option>
-          <option value="basic" {{ 'selected' if variant=='basic' else '' }}>Level 2: Basic Guardrails (Mild Constraints)</option>
-          <option value="hardened" {{ 'selected' if variant=='hardened' else '' }}>Level 3: Hardened Guardrails (Strict Role Anchoring)</option>
-          <option value="paranoid" {{ 'selected' if variant=='paranoid' else '' }}>Level 4: Paranoid / Zero Trust (Maximum Defense)</option>
+          <option value="vulnerable" {{ 'selected' if variant=='vulnerable' else '' }}
+                  data-hs-title="Level 1: Ultra-Vulnerable / Naive (Zero Defenses)"
+                  data-hs-desc="Zero guardrails or protective rules. The AI is naive and obediently executes whatever an attacker asks."
+                  data-hs-analogy="🎒 Analogy: Leaving your school locker unlocked and wide open in the main hallway with your phone, wallet, and quiz answers on display.">Level 1: Ultra-Vulnerable / Naive (Zero Defenses)</option>
+          <option value="basic" {{ 'selected' if variant=='basic' else '' }}
+                  data-hs-title="Level 2: Basic Guardrails (Mild Constraints)"
+                  data-hs-desc="Has simple refusal rules, but easily falls for hypothetical scenarios, roleplay games, or fake authority."
+                  data-hs-analogy="🎒 Analogy: A basic combination lock on your locker, but if someone says 'the principal told me to get your homework', you believe them and give them the code.">Level 2: Basic Guardrails (Mild Constraints)</option>
+          <option value="hardened" {{ 'selected' if variant=='hardened' else '' }}
+                  data-hs-title="Level 3: Hardened Guardrails (Strict Role Anchoring)"
+                  data-hs-desc="Strict role anchoring, explicit boundary walls, and direct refusal instructions. Resists hypothetical bypasses."
+                  data-hs-analogy="🎒 Analogy: A strict hall monitor demanding to see a signed hall pass and student ID badge before letting anyone through.">Level 3: Hardened Guardrails (Strict Role Anchoring)</option>
+          <option value="paranoid" {{ 'selected' if variant=='paranoid' else '' }}
+                  data-hs-title="Level 4: Paranoid / Zero Trust (Maximum Defense)"
+                  data-hs-desc="Maximum defense posture. Treats every unexpected input as hostile and shuts down immediately if boundaries are probed."
+                  data-hs-analogy="🎒 Analogy: A bank vault with laser tripwires that slams the blast door shut the moment anyone looks in its direction.">Level 4: Paranoid / Zero Trust (Maximum Defense)</option>
         </select>
       </div>
       <div>
-        <label>Defense Architecture</label>
+        <label>
+          Defense Architecture
+          <span class="hs-tip-badge" 
+                data-hs-title="🛡️ Defense-in-Depth (3 Phases)" 
+                data-hs-desc="Instead of trusting just one security check, we stack multiple independent checkpoints in a line. If an attacker bypasses one, the next layer stops them." 
+                data-hs-analogy="🏰 Castle Analogy: A castle doesn't just rely on its front door. It has a moat (Phase 2), a drawbridge guard post (Phase 3), and castle guards inside the keep (Phase 1).">ⓘ</span>
+        </label>
         <select name="protection_mode" id="protectionModeSelect" onchange="onProtectionModeChange()">
-          <option value="direct" {{ 'selected' if protection_mode=='direct' else '' }}>Phase 1: Direct Neural Model (No Gateway)</option>
-          <option value="static" {{ 'selected' if protection_mode=='static' else '' }}>Phase 2: Static Filters (filter_rules.py)</option>
-          <option value="opa-context" {{ 'selected' if protection_mode=='opa-context' else '' }}>Phase 3: OPA Policy Enforcement</option>
+          <option value="direct" {{ 'selected' if protection_mode=='direct' else '' }}
+                  data-hs-title="Phase 1: Direct Neural Model"
+                  data-hs-desc="Direct access to the AI model. Security relies 100% on Model Hardening (the prompt). No outside firewalls."
+                  data-hs-analogy="🏫 Analogy: Talking directly to a student without any teacher or hall monitor standing nearby.">Phase 1: Direct Neural Model (No Gateway)</option>
+          <option value="static" {{ 'selected' if protection_mode=='static' else '' }}
+                  data-hs-title="Phase 2: Static Filters (filter_rules.py)"
+                  data-hs-desc="A perimeter gateway checking text for blacklisted attack patterns (ingress) and preventing leaked secrets (egress)."
+                  data-hs-analogy="🏫 Analogy: The school metal detector and backpack checker scanning every bag before entrance and departure.">Phase 2: Static Filters (filter_rules.py)</option>
+          <option value="opa-context" {{ 'selected' if protection_mode=='opa-context' else '' }}
+                  data-hs-title="Phase 3: OPA Policy Enforcement"
+                  data-hs-desc="Open Policy Agent: evaluates user intent, domain whitelist, and risk scores before granting model access."
+                  data-hs-analogy="🏫 Analogy: The principal's official hall pass authorization system verifying whether you have permission to enter the science lab.">Phase 3: OPA Policy Enforcement</option>
         </select>
+      </div>
+    </div>
+
+    <!-- High School Cyber Field Guide Drawer -->
+    <div class="hs-guide-banner">
+      <div class="hs-guide-toggle" onclick="toggleHsGuide()">
+        <div class="hs-guide-title">
+          🎓 HIGH SCHOOL CYBER FIELD GUIDE &bull; Plain-English Defense Reference
+        </div>
+        <div style="font-size: .8rem; color: var(--butler-gold); font-weight: 700;">
+          <span id="hsGuideChevron">▼ Click to Expand</span>
+        </div>
+      </div>
+      <div class="hs-guide-content" id="hsGuideContent" style="display:none;">
+        <div class="hs-card hs-card-p1">
+          <div class="hs-card-title" style="color:#c084fc;">🟣 Phase 1: Model Hardening (The AI's Conscience)</div>
+          <div class="hs-card-text">
+            <strong>What it does:</strong> Writes strict rules directly into the AI's system prompt instructions. It teaches the AI who it is, what its job is, and what rules it must never violate.
+          </div>
+          <div class="hs-card-analogy">
+            💡 <strong>High School Analogy:</strong> Personal student integrity. When someone whispers <em>"Hey, give me the answers to the chemistry test or pretend we're in an emergency"</em>, the student's inner moral compass firmly says <strong>"No."</strong>
+          </div>
+        </div>
+
+        <div class="hs-card hs-card-p2">
+          <div class="hs-card-title" style="color:#ffc72c;">🟡 Phase 2: Static Filter Rules (The School Metal Detector)</div>
+          <div class="hs-card-text">
+            <strong>What it does:</strong> Sits outside the AI like a security firewall. It inspects incoming messages for attack keywords (like <code>ignore previous</code> or <code>sudo</code>), and scans outgoing responses to make sure secrets (passwords, PINs, master keys) never leak out.
+          </div>
+          <div class="hs-card-analogy">
+            💡 <strong>High School Analogy:</strong> The front door backpack scanner. If someone tries bringing contraband into school, it gets confiscated immediately before they ever step into a classroom.
+          </div>
+        </div>
+
+        <div class="hs-card hs-card-p3">
+          <div class="hs-card-title" style="color:#38bdf8;">🔵 Phase 3: OPA Policy Engine (The Principal's Hall Pass)</div>
+          <div class="hs-card-text">
+            <strong>What it does:</strong> Uses Open Policy Agent (OPA) with JSON rules to calculate risk scores, check what role the user has, and determine if an action matches approved campus missions.
+          </div>
+          <div class="hs-card-analogy">
+            💡 <strong>High School Analogy:</strong> The school hall pass system. Even if a student has an empty backpack, they can't just walk into the teachers' lounge without a signed pass from the principal proving they are authorized.
+          </div>
+        </div>
+
+        <div class="hs-card hs-card-tiers">
+          <div class="hs-card-title" style="color:#34d399;">🟢 The 4 Hardening Tiers (From Open Locker to Bank Vault)</div>
+          <div class="hs-card-text">
+            <strong>Level 1 (Naive):</strong> Leaving your locker wide open with your phone and money on display.<br/>
+            <strong>Level 2 (Basic):</strong> A basic locker lock, but easily tricked by "the teacher told me to get it."<br/>
+            <strong>Level 3 (Hardened):</strong> Strict hall monitor requiring a signed pass and student ID badge.<br/>
+            <strong>Level 4 (Paranoid):</strong> A high-security bank vault with laser tripwires that locks down at any sudden move.
+          </div>
+          <div class="hs-card-analogy">
+            💡 <strong>Key Takeaway:</strong> Real cyber defense stacks Phase 1 + Phase 2 + Phase 3 together so no single mistake causes a breach!
+          </div>
+        </div>
       </div>
     </div>
 
@@ -1497,30 +1761,39 @@ PAGE = """
       <!-- Prominent 3-Phase Navigation Tabs -->
       <div class="phase-tabs-bar">
         <!-- TAB 1: PHASE 1 -->
-        <button type="button" class="phase-tab-btn tab-p1 active" id="tabPhase1" onclick="switchPhaseTab(1)">
+        <button type="button" class="phase-tab-btn tab-p1 active" id="tabPhase1" onclick="switchPhaseTab(1)"
+                data-hs-title="Phase 1: Model Hardening (Neural Prompt)"
+                data-hs-desc="Edit the system instructions that program the AI's internal ethics, boundaries, and personality."
+                data-hs-analogy="🧠 Analogy: Coaching a student so they are smart enough to recognize tricks and refuse to cheat.">
           <div class="phase-tab-indicator ind-p1"></div>
           <div class="phase-tab-body">
-            <div class="phase-tab-tag tag-p1">PHASE 1 &bull; NEURAL PROMPT</div>
+            <div class="phase-tab-tag tag-p1">PHASE 1 &bull; NEURAL PROMPT <span class="hs-tip-badge">ⓘ</span></div>
             <div class="phase-tab-name">🟣 Model Hardening</div>
             <div class="phase-tab-target"><code>modelfiles/*.txt</code></div>
           </div>
         </button>
 
         <!-- TAB 2: PHASE 2 -->
-        <button type="button" class="phase-tab-btn tab-p2" id="tabPhase2" onclick="switchPhaseTab(2)">
+        <button type="button" class="phase-tab-btn tab-p2" id="tabPhase2" onclick="switchPhaseTab(2)"
+                data-hs-title="Phase 2: Static Filter Rules (Gateway Firewall)"
+                data-hs-desc="Edit Python rules that filter out attack keywords before prompts reach the AI, and block leaked secrets on output."
+                data-hs-analogy="🚪 Analogy: The front door backpack scanner that checks what comes in and what goes out.">
           <div class="phase-tab-indicator ind-p2"></div>
           <div class="phase-tab-body">
-            <div class="phase-tab-tag tag-p2">PHASE 2 &bull; GATEWAY PERIMETER</div>
+            <div class="phase-tab-tag tag-p2">PHASE 2 &bull; GATEWAY PERIMETER <span class="hs-tip-badge">ⓘ</span></div>
             <div class="phase-tab-name">🟡 Static Filter Rules</div>
             <div class="phase-tab-target"><code>filter_rules.py</code></div>
           </div>
         </button>
 
         <!-- TAB 3: PHASE 3 -->
-        <button type="button" class="phase-tab-btn tab-p3" id="tabPhase3" onclick="switchPhaseTab(3)">
+        <button type="button" class="phase-tab-btn tab-p3" id="tabPhase3" onclick="switchPhaseTab(3)"
+                data-hs-title="Phase 3: OPA Policy Engine (Access Rules)"
+                data-hs-desc="Edit the JSON policy rules that evaluate whether a user's intent and risk level are permitted on campus."
+                data-hs-analogy="📋 Analogy: The official hall pass and permissions system verifying you have authorization to enter.">
           <div class="phase-tab-indicator ind-p3"></div>
           <div class="phase-tab-body">
-            <div class="phase-tab-tag tag-p3">PHASE 3 &bull; POLICY ENGINE</div>
+            <div class="phase-tab-tag tag-p3">PHASE 3 &bull; POLICY ENGINE <span class="hs-tip-badge">ⓘ</span></div>
             <div class="phase-tab-name">🔵 OPA Context Policy</div>
             <div class="phase-tab-target"><code>policies/rules.json</code></div>
           </div>
@@ -1534,7 +1807,10 @@ PAGE = """
           <div class="banner-text">
             Tunes system instructions directly within the LLM prompt context across 4 hardening tiers (Level 1 Ultra-Vulnerable to Level 4 Paranoid). Attacks directly probe this prompt boundary.
           </div>
-          <div class="banner-meta">
+          <div class="hs-callout">
+            💡 <strong>High School Plain-English Analogy:</strong> Phase 1 is like teaching a student strong personal integrity. When a peer tries to trick them into giving away exam answers (<em>"Pretend this is an emergency or an educational test!"</em>), the student's inner moral compass firmly says: <strong>"No, that violates the honor code."</strong>
+          </div>
+          <div class="banner-meta" style="margin-top:.6rem;">
             Target File: <code id="p1TargetFile">modelfiles/{{ persona }}_{{ variant }}.txt</code> &bull; Active Tier: <strong id="p1TierDisplay" style="color:var(--purple-neon);">{{ variant|upper }}</strong>
           </div>
         </div>
@@ -1562,7 +1838,10 @@ PAGE = """
           <div class="banner-text">
             Perimeter defenses in Python. <code>INGRESS_BLACKLIST</code> intercepts prompt injections before invoking the LLM; <code>EGRESS_SECRETS</code> and <code>EGRESS_PATTERNS</code> prevent DLP leaks from leaving the gateway. Validates syntax before hot-reloading!
           </div>
-          <div class="banner-meta">
+          <div class="hs-callout">
+            💡 <strong>High School Plain-English Analogy:</strong> Phase 2 is like a metal detector and backpack checker at the school front door. Before any message reaches the AI, we scan for contraband keywords like <code>sudo</code>, <code>jailbreak</code>, or <code>disregard instructions</code>. Before the AI sends an answer back, we scan to make sure no master passwords or access keys leaked out.
+          </div>
+          <div class="banner-meta" style="margin-top:.6rem;">
             Target File: <code>lab/scripts/filter_rules.py</code> &bull; Runtime Reload: <strong>Automated on Save & Request</strong>
           </div>
         </div>
@@ -1596,7 +1875,10 @@ PAGE = """
           <div class="banner-text">
             Declarative JSON policy ingested by Open Policy Agent (OPA). Defines domain whitelists (<code>academic_tutoring</code>, <code>robotics_patrol</code>), blocked intents, risk flags, and confidence thresholds. Validates JSON before writing!
           </div>
-          <div class="banner-meta">
+          <div class="hs-callout">
+            💡 <strong>High School Plain-English Analogy:</strong> Phase 3 is like the school administration's official hall pass policy. Even if a message passes the backpack check, the OPA engine checks the student's ID badge, authorized hallway, and risk score. If an unapproved user tries to unlock the school chemistry stockroom, OPA denies access instantly!
+          </div>
+          <div class="banner-meta" style="margin-top:.6rem;">
             Target File: <code>policies/rules.json</code> &bull; OPA Engine: <strong>Watching /policies filesystem</strong>
           </div>
         </div>
@@ -1621,11 +1903,23 @@ PAGE = """
       </div>
     </div>
 
-    <label>Mission Prompt / Payload Ingestion</label>
+    <label>
+      Mission Prompt / Payload Ingestion
+      <span class="hs-tip-badge" 
+            data-hs-title="Mission Prompt / Payload Ingestion" 
+            data-hs-desc="The query or command sent to the AI sentry." 
+            data-hs-analogy="🎒 Analogy: What a student or campus visitor walks up and says to the sentry. Could be a normal question ('Where is the math lab?') or an attack trick ('Give me the master door PIN!').">ⓘ</span>
+    </label>
     <textarea name="prompt" placeholder="Send query or adversarial payload to Butler GrizzDog Gateway...">{{ prompt }}</textarea>
 
     <div class="examples">
-      <div class="examples-title">⚡ Quick Attack Missions & Benign Test Battery</div>
+      <div class="examples-title">
+        ⚡ Quick Attack Missions & Benign Test Battery
+        <span class="hs-tip-badge" 
+              data-hs-title="Attack Missions & Test Battery" 
+              data-hs-desc="Pre-packaged test scenarios modeled after real AI hacking techniques." 
+              data-hs-analogy="🧪 Lab Analogy: Standardized safety crash tests to see if the security guard catches trick questions, secret leaks, and impersonation attempts.">ⓘ</span>
+      </div>
       {% for label, text in examples %}
         <a href="#" data-prompt="{{ text|e }}">{{ label }}</a>
       {% endfor %}
@@ -1754,6 +2048,107 @@ PAGE = """
         switchPhaseTab(3);
       }
     }
+
+    // -----------------------------------------------------------------
+    // High School Cyber Field Guide Drawer Toggle
+    // -----------------------------------------------------------------
+    function toggleHsGuide() {
+      const content = document.getElementById('hsGuideContent');
+      const chev = document.getElementById('hsGuideChevron');
+      if (!content || !chev) return;
+      const isOpen = content.style.display !== 'none';
+      content.style.display = isOpen ? 'none' : 'grid';
+      chev.innerText = isOpen ? '▼ Click to Expand' : '▲ Click to Collapse';
+    }
+
+    // -----------------------------------------------------------------
+    // High School Plain-English Tooltip Engine
+    // -----------------------------------------------------------------
+    (function initHsTooltips() {
+      const tooltip = document.getElementById('hsTooltip');
+      const tipTitle = document.getElementById('hsTipTitle');
+      const tipDesc = document.getElementById('hsTipDesc');
+      const tipAnalogy = document.getElementById('hsTipAnalogy');
+      if (!tooltip) return;
+
+      function showTooltip(el, mouseX, mouseY) {
+        const title = el.getAttribute('data-hs-title') || el.closest('[data-hs-title]')?.getAttribute('data-hs-title');
+        const desc = el.getAttribute('data-hs-desc') || el.closest('[data-hs-desc]')?.getAttribute('data-hs-desc');
+        const analogy = el.getAttribute('data-hs-analogy') || el.closest('[data-hs-analogy]')?.getAttribute('data-hs-analogy');
+
+        if (!title && !desc) return;
+
+        tipTitle.innerHTML = title || 'Cyber Concept';
+        tipDesc.innerHTML = desc || '';
+        if (analogy) {
+          tipAnalogy.innerHTML = analogy;
+          tipAnalogy.style.display = 'block';
+        } else {
+          tipAnalogy.style.display = 'none';
+        }
+
+        tooltip.classList.add('visible');
+        updateTooltipPos(mouseX, mouseY);
+      }
+
+      function hideTooltip() {
+        tooltip.classList.remove('visible');
+      }
+
+      function updateTooltipPos(x, y) {
+        const margin = 16;
+        const rect = tooltip.getBoundingClientRect();
+        let left = x + margin;
+        let top = y + margin;
+
+        if (left + rect.width > window.innerWidth - margin) {
+          left = x - rect.width - margin;
+        }
+        if (top + rect.height > window.innerHeight - margin) {
+          top = y - rect.height - margin;
+        }
+        if (left < margin) left = margin;
+        if (top < margin) top = margin;
+
+        tooltip.style.left = left + 'px';
+        tooltip.style.top = top + 'px';
+      }
+
+      // Delegate mouse events across entire document
+      document.addEventListener('mouseover', function(e) {
+        const target = e.target.closest('[data-hs-title], .hs-tip-badge');
+        if (target) {
+          showTooltip(target, e.clientX, e.clientY);
+        }
+      });
+
+      document.addEventListener('mousemove', function(e) {
+        if (tooltip.classList.contains('visible')) {
+          updateTooltipPos(e.clientX, e.clientY);
+        }
+      });
+
+      document.addEventListener('mouseout', function(e) {
+        const target = e.target.closest('[data-hs-title], .hs-tip-badge');
+        if (target) {
+          if (!e.relatedTarget || !target.contains(e.relatedTarget)) {
+            hideTooltip();
+          }
+        }
+      });
+
+      // Also listen to select element changes to show a quick explainer toast
+      const selects = document.querySelectorAll('select');
+      selects.forEach(sel => {
+        sel.addEventListener('change', function() {
+          const selectedOption = sel.options[sel.selectedIndex];
+          if (selectedOption && selectedOption.getAttribute('data-hs-title')) {
+            showTooltip(selectedOption, sel.getBoundingClientRect().left + 60, sel.getBoundingClientRect().top + 35);
+            setTimeout(hideTooltip, 4500);
+          }
+        });
+      });
+    })();
 
     // Tab key indent support for code editors
     function enableTabIndent(textareaId, spaces = 4) {
