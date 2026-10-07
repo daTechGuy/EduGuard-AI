@@ -323,6 +323,43 @@ $$\text{Composite Score} = (0.60 \times \text{Attack Catch Rate}) + (0.40 \times
 
 ---
 
+## Updating Existing Installs to the Latest Version
+
+If you already set up the lab previously and want to update to the latest features (new GrizzDog hardening tiers, in-browser 3-phase defense studio, Butler CC theming):
+
+### 1. Update Repository Code
+```bash
+git pull origin main
+```
+*(If you have uncommitted local file modifications you wish to overwrite: `git fetch origin && git reset --hard origin/main`)*
+
+### 2. Restart or Recreate Docker Containers
+```bash
+# Quick restart:
+docker compose restart web
+
+# Or complete rebuild:
+docker compose down
+docker compose up -d --build
+```
+
+### 3. Rebuild Models in Ollama
+```bash
+docker compose exec llm ollama create grizzdog_vulnerable -f /app/lab/modelfiles/grizzdog_vulnerable.txt
+docker compose exec llm ollama create grizzdog_basic      -f /app/lab/modelfiles/grizzdog_basic.txt
+docker compose exec llm ollama create grizzdog_hardened   -f /app/lab/modelfiles/grizzdog_hardened.txt
+docker compose exec llm ollama create grizzdog_paranoid   -f /app/lab/modelfiles/grizzdog_paranoid.txt
+```
+
+### 4. Updating Docker to the Latest Version
+If your Docker Desktop is outdated:
+- **Mac & Windows GUI**: Open Docker Desktop > ⚙️ Settings > **Software Updates** > **Check for updates** > **Download and install**.
+- **Windows (Terminal)**: `winget upgrade Docker.DockerDesktop`
+- **Mac (Terminal / Homebrew)**: `brew upgrade --cask docker`
+- **Linux**: `sudo apt-get update && sudo apt-get --only-upgrade install -y docker-ce docker-ce-cli containerd.io docker-compose-plugin`
+
+---
+
 ## Troubleshooting
 
 | Problem | Likely Cause / Solution |

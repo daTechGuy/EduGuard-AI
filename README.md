@@ -185,6 +185,40 @@ python lab/scripts/set_tier.py calibrated   # Full reference defense benchmark
 
 ---
 
+## Updating to the Latest Lab Version
+
+If you already cloned the repository or need to pull the latest updates (new GrizzDog hardening tiers, in-browser 3-phase defense studio, Butler CC theming):
+
+```bash
+# 1. Pull the newest code from GitHub:
+git pull origin main
+
+# If you have local edits you want to overwrite:
+# git fetch origin && git reset --hard origin/main
+
+# 2. Restart or rebuild the web gateway container:
+docker compose restart web
+# Or for a full clean recreate: docker compose down && docker compose up -d --build
+
+# 3. Build the GrizzDog 4-Tier models in Ollama:
+docker compose exec llm ollama create grizzdog_vulnerable -f /app/lab/modelfiles/grizzdog_vulnerable.txt
+docker compose exec llm ollama create grizzdog_basic      -f /app/lab/modelfiles/grizzdog_basic.txt
+docker compose exec llm ollama create grizzdog_hardened   -f /app/lab/modelfiles/grizzdog_hardened.txt
+docker compose exec llm ollama create grizzdog_paranoid   -f /app/lab/modelfiles/grizzdog_paranoid.txt
+
+# 4. Open or refresh your browser:
+# http://localhost:5000
+```
+
+### Updating Docker to the Latest Version
+If your Docker Desktop is outdated:
+- **Docker Desktop (Mac & Windows)**: Open Docker Desktop > Click ⚙️ (Settings) > **Software Updates** > **Check for updates** > **Download and install**.
+- **Windows (PowerShell)**: `winget upgrade Docker.DockerDesktop`
+- **macOS (Terminal / Homebrew)**: `brew upgrade --cask docker`
+- **Linux (Ubuntu/Debian)**: `sudo apt-get update && sudo apt-get --only-upgrade install -y docker-ce docker-ce-cli containerd.io docker-compose-plugin`
+
+---
+
 ## Course Materials & Guides
 
 - 📖 [Red Team Engagement Guide](docs/assignments/RedTeam_Engagement_Guide.md)
