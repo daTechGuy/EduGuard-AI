@@ -358,6 +358,29 @@ If your Docker Desktop is outdated:
 
 ---
 
+## Booth Laptop Lockdown Checklist
+
+The gateway has no login. For public events, lock it down in layers:
+
+1. **Kiosk mode + local-only (the default binding):**
+   ```bash
+   # Docker
+   EDUGUARD_KIOSK=1 docker compose up -d
+   # Native PowerShell
+   $env:EDUGUARD_KIOSK="1"; python lab/scripts/secure_gateway.py
+   ```
+   The console prints `Booth kiosk mode` on start. The header shows **🔒 BOOTH KIOSK** and there is no Classroom Studio switch.
+2. **Full-screen browser** so visitors can't open other tabs, dev tools or files:
+   - Edge: `msedge --kiosk http://localhost:5000 --edge-kiosk-type=fullscreen`
+   - Chrome: `chrome --kiosk http://localhost:5000`
+   Exit with `Alt+F4`.
+3. **Separate Windows account** for the booth (no admin rights, no saved passwords), or Windows *Assigned Access* to run only the browser.
+4. **Firewall:** block inbound TCP 5000, 11434 and 8181 (`New-NetFirewallRule -DisplayName "EduGuard block inbound" -Direction Inbound -Protocol TCP -LocalPort 5000,11434,8181 -Action Block`).
+5. **Network:** prefer a private hotspot or no network at all. The offline simulator keeps all three booth stages playable without Wi-Fi.
+6. **Before you leave:** close the browser, stop the stack (`docker compose down`) and sign out of the booth account.
+
+---
+
 ## Troubleshooting
 
 | Problem | Likely Cause / Solution |
@@ -373,6 +396,9 @@ If your Docker Desktop is outdated:
 | Modified system prompt not showing | Click **Save & Apply** in the UI editor or refresh the page. |
 | OPA policy blocks unexpected queries | Review `policies/rules.json` confidence thresholds and ensure allowed intents cover your query. |
 | Phase 3 node says "Local Policy Evaluator (OPA engine offline)" | Normal on native Windows/Mac setups: the gateway evaluates `rules.json` with a Python port of `gateway.rego`, so your edits still apply. If it also says "classifier offline", Ollama isn't reachable and only the `rules.json` blacklist is checked. To use real OPA natively, run `opa run --server --watch .` inside `policies/` and start the gateway with `OPA_ENABLED=true OPA_URL=http://localhost:8181/v1/data/gateway/decision`. |
+| `Host '...' not allowed` (403) | The gateway only answers to `localhost` / `127.0.0.1` by default. Browse to `http://localhost:5000`, or for a LAN classroom server set `EDUGUARD_ALLOWED_HOSTS` (e.g. `*` or the server's IP). |
+| Other computers can't open the gateway | By design: it listens on this computer only. See the README's *Security & Network Lockdown* section to opt in to LAN access. |
+| `filter_rules.py` save rejected ("only ... lists are allowed") | The file is data, not code: keep only the three `NAME = ["...", ...]` lists (comments are fine). |
 | Every Phase 3 request blocked with "OPA unavailable" (Docker) | Check `docker compose logs opa`. OPA loads every `.json` in `policies/` into one data tree, so keep extra copies of `rules.json` (backups, presets) **outside** that folder or OPA will refuse to start with a merge error. |
 | Docker daemon not running | Ensure Docker Desktop is launched and running in the system tray before running commands. |
 

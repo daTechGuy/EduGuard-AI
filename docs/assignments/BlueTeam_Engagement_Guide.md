@@ -55,7 +55,7 @@ Students edit **only** the designated defense configuration files:
    - Key objective: Strip confidential credentials from system instructions and establish strict behavioral guardrails.
 
 2. **Phase 2 (Static Gateway Filtering)**:
-   - Edit [`lab/scripts/filter_rules.py`](../../lab/scripts/filter_rules.py)
+   - Edit [`lab/scripts/filter_rules.py`](../../lab/scripts/filter_rules.py). It uses Python list syntax but is read as **data only**: keep to the three `INGRESS_BLACKLIST`, `EGRESS_SECRETS` and `EGRESS_PATTERNS` lists of strings. Imports, functions or other code are rejected.
    - Hot-reloaded on every web request or benchmark run.
    - Three filter lists:
      - `INGRESS_BLACKLIST`: Pre-model blocking for prompt injection, roleplay framing, and authority spoofing.

@@ -25,7 +25,6 @@ Supports live editing, saving, and hot-reloading of model system instructions,
 Phase 2 filter_rules.py, and Phase 3 rules.json directly through the Web UI.
 """
 
-import importlib
 import json
 import os
 import hashlib
@@ -33,13 +32,15 @@ import re
 import time
 from datetime import datetime, timezone
 
+from urllib.parse import urlparse
+
 from flask import Flask, jsonify, render_template_string, request
 import requests
 
-import filter_rules
 from benchmark import check_egress, check_ingress, run_benchmark
 from policy_eval import evaluate as evaluate_policy, load_policy
 from report_signing import sign_report
+from rules_loader import RulesError, load_rules_file, parse_rules
 
 try:
     import ollama
@@ -70,6 +71,22 @@ def _env_flag(name, default=False):
 
 
 OPA_ENABLED = _env_flag("OPA_ENABLED", False)
+
+# Network lockdown. Default: only this computer can connect. A classroom
+# server that other machines must reach sets EDUGUARD_HOST=0.0.0.0.
+BIND_HOST = os.environ.get("EDUGUARD_HOST", "127.0.0.1").strip() or "127.0.0.1"
+BIND_PORT = int(os.environ.get("EDUGUARD_PORT", "5000"))
+_LOOPBACK = {"localhost", "127.0.0.1", "::1"}
+# Host-header allowlist (blocks DNS-rebinding attacks from web pages).
+# Defaults to loopback names when bound to loopback, else any host.
+_allowed = os.environ.get("EDUGUARD_ALLOWED_HOSTS", "").strip()
+if _allowed:
+    ALLOWED_HOSTS = {h.strip().lower().strip("[]") for h in _allowed.split(",") if h.strip()}
+else:
+    ALLOWED_HOSTS = _LOOPBACK if BIND_HOST in _LOOPBACK else {"*"}
+# Booth kiosk: everything that edits files or rebuilds models is disabled,
+# and the page is locked to the booth view.
+KIOSK_MODE = _env_flag("EDUGUARD_KIOSK", False)
 OPA_FAIL_OPEN = _env_flag("OPA_FAIL_OPEN", False)
 
 ALLOWED_DOMAINS = {
@@ -159,14 +176,61 @@ EXAMPLE_PROMPTS = [
 app = Flask(__name__)
 recent_log = []
 
+# Routes that read or change rules, prompts or models: off in kiosk mode.
+KIOSK_BLOCKED_PATHS = {
+    "/api/filter_rules", "/api/filter_rules/preset",
+    "/api/opa_rules", "/api/opa_rules/preset",
+    "/api/system_prompt", "/api/rebuild_model",
+}
+
+
+def _forbidden(message, code=403):
+    return jsonify({"status": "error", "error": message}), code
+
+
+@app.before_request
+def request_guard():
+    # 1) Host allowlist: a malicious page using DNS rebinding sends its own
+    #    hostname here, not localhost.
+    host = (urlparse("//" + request.host).hostname or "").lower()
+    if "*" not in ALLOWED_HOSTS and host not in ALLOWED_HOSTS:
+        return _forbidden(f"Host '{host}' not allowed. Set EDUGUARD_ALLOWED_HOSTS to permit it.")
+
+    if request.method in ("POST", "PUT", "PATCH", "DELETE"):
+        # 2) Cross-site requests: browsers send Origin on POSTs; it must be this app.
+        origin = request.headers.get("Origin")
+        if origin is not None and urlparse(origin).netloc.lower() != request.host.lower():
+            return _forbidden("Cross-site request blocked.")
+        # 3) API writes must be real JSON (plain HTML forms can't send it).
+        if request.path.startswith("/api/") and not request.is_json:
+            return _forbidden("Content-Type must be application/json.", 415)
+
+    # 4) Kiosk mode: no editing or reading of rules, prompts or models.
+    if KIOSK_MODE and request.path in KIOSK_BLOCKED_PATHS:
+        return _forbidden("Disabled in booth kiosk mode (EDUGUARD_KIOSK).")
+
 
 # ---------------------------------------------------------------------
 # Modelfile & System Instruction Management
 # ---------------------------------------------------------------------
+VALID_PERSONAS = ("grizzdog", "ta", "grader", "registrar")
+VALID_VARIANTS = ("vulnerable", "basic", "hardened", "paranoid")
+
+
+def normalize_persona_variant(persona, variant):
+    """Map client-supplied values onto known ones. These end up in file
+    paths, so never trust them as-is."""
+    persona = "grizzdog" if persona == "unitree" else persona
+    if persona not in VALID_PERSONAS:
+        persona = "grizzdog"
+    if variant not in VALID_VARIANTS:
+        variant = "vulnerable"
+    return persona, variant
+
+
 def get_modelfile_path(persona, variant):
     """Resolve file path for a persona and variant across all 4 hardening levels."""
-    if persona == "unitree":
-        persona = "grizzdog"
+    persona, variant = normalize_persona_variant(persona, variant)
     filename = f"{persona}_{variant}.txt"
     filepath = os.path.join(MODELFILE_DIR, filename)
     if os.path.exists(filepath):
@@ -212,8 +276,7 @@ def get_active_system_prompt(persona, variant):
 
 def save_system_prompt_to_disk(persona, variant, new_prompt, base_model="llama3.2"):
     """Update modelfile on disk and update the active in-memory cache."""
-    if persona == "unitree":
-        persona = "grizzdog"
+    persona, variant = normalize_persona_variant(persona, variant)
     key = (persona, variant)
     LIVE_SYSTEM_PROMPTS[key] = new_prompt.strip()
     filepath = get_modelfile_path(persona, variant)
@@ -245,8 +308,7 @@ def save_system_prompt_to_disk(persona, variant, new_prompt, base_model="llama3.
 
 def rebuild_model_in_ollama(persona, variant):
     """Invoke client.create to rebuild the model inside Ollama."""
-    if persona == "unitree":
-        persona = "grizzdog"
+    persona, variant = normalize_persona_variant(persona, variant)
     filepath = get_modelfile_path(persona, variant)
     model_name = f"{persona}_{variant}"
     try:
@@ -270,18 +332,16 @@ def read_file_safely(path, default=""):
 
 
 def save_filter_rules_to_disk(code_str):
-    """Validate Python syntax, write to filter_rules.py, and reload module."""
+    """Validate that the file is data-only (see rules_loader.py), then save.
+    The file is parsed, never executed, so the browser editor can't run code."""
     try:
-        compile(code_str, "filter_rules.py", "exec")
-    except SyntaxError as e:
-        return False, f"Python SyntaxError on line {e.lineno}: {e.msg}"
-    except Exception as e:
-        return False, f"Validation error: {e}"
+        parse_rules(code_str)
+    except RulesError as e:
+        return False, str(e)
 
     try:
         with open(FILTER_RULES_PATH, "w", encoding="utf-8") as f:
             f.write(code_str)
-        importlib.reload(filter_rules)
         return True, "Phase 2 filter_rules.py successfully saved and hot-reloaded into gateway."
     except Exception as e:
         return False, f"Write error: {e}"
@@ -308,13 +368,21 @@ def save_opa_rules_to_disk(json_str):
 # ---------------------------------------------------------------------
 # Filter Rules & Context Classification
 # ---------------------------------------------------------------------
+_last_good_rules = None
+
+
 def get_rules():
-    importlib.reload(filter_rules)
-    return (
-        filter_rules.INGRESS_BLACKLIST,
-        filter_rules.EGRESS_SECRETS,
-        getattr(filter_rules, "EGRESS_PATTERNS", []),
-    )
+    """Re-read filter_rules.py on every call (hot reload) without executing
+    it. If a hand edit broke the file, keep using the last good rules."""
+    global _last_good_rules
+    try:
+        rules = load_rules_file(FILTER_RULES_PATH)
+        _last_good_rules = (rules["INGRESS_BLACKLIST"], rules["EGRESS_SECRETS"], rules["EGRESS_PATTERNS"])
+    except (OSError, RulesError) as e:
+        print(f"[WARN] filter_rules.py not loaded ({e}); using last good rules.")
+        if _last_good_rules is None:
+            return [], [], []
+    return _last_good_rules
 
 
 def log_event(event):
@@ -3012,6 +3080,9 @@ PAGE = """
         </div>
       </div>
       <div style="display:flex; gap:.75rem; align-items:center; flex-wrap:wrap;">
+        {% if kiosk %}
+        <span class="hud-tag hud-tag-gold">🔒 BOOTH KIOSK</span>
+        {% else %}
         <div class="mode-switcher">
           <button type="button" class="mode-btn active" id="btnModeStudio" onclick="setAppMode('studio')">
             🔬 Classroom Studio
@@ -3020,6 +3091,7 @@ PAGE = """
             🕹️ Expo Booth Kiosk
           </button>
         </div>
+        {% endif %}
         <span class="hud-tag hud-tag-gold">
           ⚡ GRIZZDOG MK-IV • ANDOVER KS
         </span>
@@ -4084,9 +4156,12 @@ PAGE = """
     // -----------------------------------------------------------------
     // Mode Switcher (Classroom Studio vs Booth Kiosk)
     // -----------------------------------------------------------------
-    let currentAppMode = localStorage.getItem('eduguard_mode') || 'studio';
+    // Server-side EDUGUARD_KIOSK locks the page to the booth view.
+    const KIOSK_MODE = {{ 'true' if kiosk else 'false' }};
+    let currentAppMode = KIOSK_MODE ? 'booth' : (localStorage.getItem('eduguard_mode') || 'studio');
 
     function setAppMode(mode) {
+      if (KIOSK_MODE) mode = 'booth';
       currentAppMode = mode;
       localStorage.setItem('eduguard_mode', mode);
 
@@ -5116,11 +5191,11 @@ PAGE = """
 
 @app.route("/", methods=["GET", "POST"])
 def index():
-    persona = request.form.get("persona", "grizzdog")
-    variant = request.form.get("variant", "vulnerable")
+    persona, variant = normalize_persona_variant(request.form.get("persona", "grizzdog"),
+                                                 request.form.get("variant", "vulnerable"))
     protection_mode = request.form.get("protection_mode", "static")
     prompt = request.form.get("prompt", "")
-    submitted_system_prompt = request.form.get("system_prompt", "").strip()
+    submitted_system_prompt = "" if KIOSK_MODE else request.form.get("system_prompt", "").strip()
 
     if submitted_system_prompt:
         LIVE_SYSTEM_PROMPTS[(persona, variant)] = submitted_system_prompt
@@ -5156,10 +5231,13 @@ def index():
         variant=variant,
         protection_mode=protection_mode,
         prompt=prompt,
-        current_system_prompt=current_system_prompt,
-        current_filter_rules=current_filter_rules,
-        current_opa_rules=current_opa_rules,
+        # Kiosk: never ship system prompts (they hold the secrets visitors
+        # are trying to extract) or rule files to the browser.
+        current_system_prompt="" if KIOSK_MODE else current_system_prompt,
+        current_filter_rules="" if KIOSK_MODE else current_filter_rules,
+        current_opa_rules="" if KIOSK_MODE else current_opa_rules,
         opa_enabled=OPA_ENABLED,
+        kiosk=KIOSK_MODE,
         result=result,
         examples=EXAMPLE_PROMPTS,
         log=recent_log,
@@ -5170,7 +5248,7 @@ def index():
 
 @app.route("/api/booth_attack", methods=["POST"])
 def api_booth_attack():
-    payload = request.get_json(force=True, silent=True) or {}
+    payload = request.get_json(silent=True) or {}
     stage = int(payload.get("stage", 1))
     prompt = payload.get("prompt", "").strip()
 
@@ -5216,7 +5294,7 @@ def api_filter_rules():
             "code": code,
             "filepath": FILTER_RULES_PATH,
         })
-    payload = request.get_json(force=True, silent=True) or {}
+    payload = request.get_json(silent=True) or {}
     code = payload.get("code", "")
     if not code.strip():
         return jsonify({"status": "error", "error": "Filter rules code cannot be empty"}), 400
@@ -5232,7 +5310,7 @@ def api_filter_rules():
 
 @app.route("/api/filter_rules/preset", methods=["POST"])
 def api_filter_rules_preset():
-    payload = request.get_json(force=True, silent=True) or {}
+    payload = request.get_json(silent=True) or {}
     preset_name = payload.get("preset", "calibrated")
     preset_file = os.path.join(PRESETS_DIR, f"rules_{preset_name}.py")
     if not os.path.exists(preset_file):
@@ -5258,7 +5336,7 @@ def api_opa_rules():
             "code": code,
             "filepath": RULES_JSON_PATH,
         })
-    payload = request.get_json(force=True, silent=True) or {}
+    payload = request.get_json(silent=True) or {}
     code = payload.get("code", "")
     if not code.strip():
         return jsonify({"status": "error", "error": "OPA rules JSON cannot be empty"}), 400
@@ -5276,7 +5354,7 @@ def api_opa_rules():
 
 @app.route("/api/opa_rules/preset", methods=["POST"])
 def api_opa_rules_preset():
-    payload = request.get_json(force=True, silent=True) or {}
+    payload = request.get_json(silent=True) or {}
     preset_name = "calibrated"  # the only Phase 3 preset
     # Kept outside policies/: OPA loads every JSON there into one data tree,
     # and a second top-level "policy" key makes it refuse to start.
@@ -5314,7 +5392,7 @@ def api_system_prompt():
         })
 
     # POST: Update system prompt in memory and disk
-    payload = request.get_json(force=True, silent=True) or {}
+    payload = request.get_json(silent=True) or {}
     persona = payload.get("persona", "grizzdog")
     if persona == "unitree":
         persona = "grizzdog"
@@ -5323,6 +5401,9 @@ def api_system_prompt():
 
     if not new_prompt.strip():
         return jsonify({"status": "error", "error": "System prompt cannot be empty"}), 400
+    if '"""' in new_prompt:
+        # Would close the SYSTEM block and let the rest become Modelfile directives.
+        return jsonify({"status": "error", "error": 'System prompt cannot contain triple quotes (""")'}), 400
 
     filepath, full_content = save_system_prompt_to_disk(persona, variant, new_prompt)
     return jsonify({
@@ -5334,7 +5415,7 @@ def api_system_prompt():
 
 @app.route("/api/rebuild_model", methods=["POST"])
 def api_rebuild_model():
-    payload = request.get_json(force=True, silent=True) or {}
+    payload = request.get_json(silent=True) or {}
     persona = payload.get("persona", "grizzdog")
     if persona == "unitree":
         persona = "grizzdog"
@@ -5354,7 +5435,7 @@ def api_benchmark():
 
 @app.route("/api/export_lab_report", methods=["POST"])
 def api_export_lab_report():
-    payload = request.get_json(force=True, silent=True) or {}
+    payload = request.get_json(silent=True) or {}
     student_name = payload.get("student_name", "Butler Cyber Student").strip() or "Butler Cyber Student"
     student_email = payload.get("student_email", "student@butlercc.edu").strip() or "student@butlercc.edu"
     course_section = payload.get("course_section", "IN 201 - Cyber Defense Lab").strip() or "IN 201 - Cyber Defense Lab"
@@ -5375,7 +5456,7 @@ def api_export_lab_report():
 
 @app.route("/api/arena_attack", methods=["POST"])
 def api_arena_attack():
-    payload = request.get_json(force=True, silent=True) or {}
+    payload = request.get_json(silent=True) or {}
     persona = payload.get("persona", "grizzdog")
     if persona == "unitree":
         persona = "grizzdog"
@@ -5420,4 +5501,8 @@ def api_arena_attack():
 if __name__ == "__main__":
     print(f"🐾 Butler GrizzDog Gateway starting (Andover Campus) — Ollama host: {OLLAMA_HOST}")
     print("   Open http://localhost:5000 in your browser")
-    app.run(host="0.0.0.0", port=5000, debug=False)
+    if BIND_HOST not in _LOOPBACK:
+        print(f"[WARN] Listening on {BIND_HOST}:{BIND_PORT}: other machines on this network can reach the gateway.")
+    if KIOSK_MODE:
+        print("[INFO] Booth kiosk mode: rule/prompt editing and model rebuilds are disabled.")
+    app.run(host=BIND_HOST, port=BIND_PORT, debug=False)

@@ -15,30 +15,25 @@ Usage:
     python lab/scripts/evaluate_rules.py --verbose
 """
 
-import importlib.util
 import sys
 from pathlib import Path
 
 from benchmark import run_benchmark
-
-
-def load_rules(rules_path: Path):
-    spec = importlib.util.spec_from_file_location("filter_rules", rules_path)
-    if spec is None or spec.loader is None:
-        raise RuntimeError(f"Cannot load {rules_path}")
-    module = importlib.util.module_from_spec(spec)
-    spec.loader.exec_module(module)
-    return module
+from rules_loader import RulesError, load_rules_file
 
 
 def run_evaluation(verbose=False):
     repo_root = Path(__file__).resolve().parents[2]
     rules_path = repo_root / "lab" / "scripts" / "filter_rules.py"
-    rules = load_rules(rules_path)
+    try:
+        rules = load_rules_file(rules_path)  # parsed as data, never executed
+    except (OSError, RulesError) as e:
+        print(f"ERROR: {rules_path}: {e}")
+        return 2
 
-    blacklist = getattr(rules, "INGRESS_BLACKLIST", [])
-    secrets = getattr(rules, "EGRESS_SECRETS", [])
-    patterns = getattr(rules, "EGRESS_PATTERNS", [])
+    blacklist = rules["INGRESS_BLACKLIST"]
+    secrets = rules["EGRESS_SECRETS"]
+    patterns = rules["EGRESS_PATTERNS"]
     bm = run_benchmark(blacklist, secrets, patterns)
 
     print("\n" + "=" * 70)

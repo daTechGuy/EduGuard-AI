@@ -4,7 +4,8 @@ services:
     container_name: llm
     working_dir: /app
     ports:
-      - "${OLLAMA_PORT:-11434}:11434"
+      # Host-only: the Ollama API can create/delete models with no auth.
+      - "127.0.0.1:${OLLAMA_PORT:-11434}:11434"
     volumes:
       - .:/app
       - ollama_storage:/root/.ollama
@@ -13,7 +14,8 @@ services:
     image: openpolicyagent/opa:0.68.0
     command: run --server --watch --addr=0.0.0.0:8181 /policies
     ports:
-      - "8181:8181"
+      # Host-only: OPA's API can replace the policy with no auth.
+      - "127.0.0.1:8181:8181"
     volumes:
       - ./policies:/policies:ro
 
@@ -25,7 +27,9 @@ services:
     # an image. Fine for a classroom sandbox; not meant for production.
     command: sh -c "pip install --no-cache-dir -r requirements.txt && python lab/scripts/secure_gateway.py"
     ports:
-      - "${WEB_PORT:-5000}:5000"
+      # Host-only by default. For a classroom server other machines must
+      # reach, start with WEB_BIND=0.0.0.0 EDUGUARD_ALLOWED_HOSTS='*'.
+      - "${WEB_BIND:-127.0.0.1}:${WEB_PORT:-5000}:5000"
     volumes:
       - .:/app
     environment:
@@ -40,6 +44,13 @@ services:
       # Instructor-only key for signing Canvas lab reports. Leave unset on
       # student machines; reports are then marked UNSIGNED.
       REPORT_SECRET: ${REPORT_SECRET:-}
+      # Inside the container the app must listen on all interfaces; the
+      # port mapping above decides who can actually reach it.
+      EDUGUARD_HOST: 0.0.0.0
+      # Host-header allowlist (DNS-rebinding defense); '*' to disable.
+      EDUGUARD_ALLOWED_HOSTS: ${EDUGUARD_ALLOWED_HOSTS:-localhost,127.0.0.1}
+      # Set to 1 on booth laptops: locks the page to the booth, disables editing.
+      EDUGUARD_KIOSK: ${EDUGUARD_KIOSK:-0}
     depends_on:
       - llm
       - opa

@@ -26,6 +26,7 @@
 - **One-command model build**: `build_models.py` builds all 18 models; the pipeline shows `FALLBACK ⚠️` / `SIMULATED ⚠️` when the selected model isn't the one answering.
 - **Phase 3 fixed**: OPA starts again in Docker (a preset file in `policies/` caused a merge error), native setups evaluate the real `rules.json` with a Python port of `gateway.rego`, and Phase 3 now also checks model replies.
 - **Booth QR code**: scannable in Docker and pointed at Butler's current Cyber Security program page.
+- **Locked down by default**: listens on this computer only, `filter_rules.py` is parsed as data (never executed), cross-site and DNS-rebinding requests are refused, and `EDUGUARD_KIOSK=1` turns a booth laptop into a booth-only kiosk.
 
 ---
 
@@ -138,8 +139,24 @@ Re-run it after editing any Modelfile. If a model is missing, the pipeline's mod
 
 Running without Docker? See the native Windows/macOS tracks in the [Setup Guide](lab/SETUP_GUIDE.md).
 
-> [!WARNING]
-> **Trusted networks only.** The gateway listens on all network interfaces (`0.0.0.0:5000`) with **no login**, and the Defense Studio can write and run Python (`filter_rules.py`) on the host. Anyone on the same Wi-Fi can reach it. Don't run it on open event or campus Wi-Fi until the planned kiosk lockdown lands; for booths, use a private hotspot or firewall port 5000.
+### Security & Network Lockdown
+The gateway has **no login**, so it is locked down in layers instead:
+
+- **This computer only (default).** It listens on `127.0.0.1:5000`; Docker publishes the web, Ollama and OPA ports on `127.0.0.1` only. Other machines on the Wi-Fi can't connect.
+- **Rules are data, not code.** `filter_rules.py` is parsed, never executed: only the three `["..."]` lists are accepted, so the browser editor can't be used to run code on the laptop.
+- **Web pages can't attack it.** Write requests must be JSON from the app's own origin, and requests for any hostname other than `localhost` / `127.0.0.1` are refused (blocks cross-site and DNS-rebinding tricks from a malicious site open in the same browser).
+- **Booth kiosk mode** (`EDUGUARD_KIOSK=1`): locks the page to the booth, turns off every route that reads or edits rules, system prompts or models, and never sends system prompts to the browser. Booth, arena and benchmark keep working.
+
+**Classroom server that students reach over the network** (opt-in; the Defense Studio is then open to everyone on that network, so use a trusted classroom network only):
+
+```bash
+# Docker
+WEB_BIND=0.0.0.0 EDUGUARD_ALLOWED_HOSTS='*' docker compose up -d
+# Native (PowerShell: $env:EDUGUARD_HOST="0.0.0.0"; $env:EDUGUARD_ALLOWED_HOSTS="*")
+EDUGUARD_HOST=0.0.0.0 EDUGUARD_ALLOWED_HOSTS='*' python lab/scripts/secure_gateway.py
+```
+
+**Booth laptop:** `EDUGUARD_KIOSK=1`, keep the default local-only binding, and follow the booth checklist in the [Setup Guide](lab/SETUP_GUIDE.md#booth-laptop-lockdown-checklist).
 
 ### 3. Configuration (Environment Variables)
 All optional. Docker Compose sets the OPA and Ollama ones for you.
@@ -153,6 +170,11 @@ All optional. Docker Compose sets the OPA and Ollama ones for you.
 | `OPA_FAIL_OPEN` | `false` | If OPA is unreachable, allow instead of block |
 | `REPORT_SECRET` | *(unset)* | Instructor-only key that signs Canvas lab reports; unset = reports marked UNSIGNED |
 | `HELDOUT_TESTS_PATH` | `lab/benchmark/heldout_tests.json` | Private held-out benchmark file for graded work |
+| `EDUGUARD_HOST` | `127.0.0.1` (Compose: `0.0.0.0` inside the container) | Network interface to listen on; `0.0.0.0` lets other machines connect |
+| `EDUGUARD_PORT` | `5000` | Gateway port |
+| `EDUGUARD_ALLOWED_HOSTS` | `localhost,127.0.0.1` | Hostnames the gateway answers to; `*` = any (needed for LAN classroom servers) |
+| `EDUGUARD_KIOSK` | `0` | `1` = booth kiosk: booth-only page, no rule/prompt/model editing |
+| `WEB_BIND` (Compose only) | `127.0.0.1` | Host interface Docker publishes port 5000 on; `0.0.0.0` for LAN access |
 
 ---
 
@@ -163,7 +185,7 @@ EduGuard-AI features a live, in-browser **3-Phase Defense Architecture Studio** 
 | Phase | Defense Layer | Target File | Browser Studio Features & Capabilities |
 | :--- | :--- | :--- | :--- |
 | 🟣 **Phase 1** | **Model Hardening** | `lab/modelfiles/*.txt` | Edit neural system prompts across all 4 hardening tiers (Level 1 Ultra-Vulnerable to Level 4 Paranoid). Hot-reloads in-memory and saves to disk; one-click runtime rebuild in Ollama. |
-| 🟡 **Phase 2** | **Static Gateway Rules** | `lab/scripts/filter_rules.py` | Edit Python-based `INGRESS_BLACKLIST`, `EGRESS_SECRETS`, and `EGRESS_PATTERNS`. Automated Python AST syntax verification before saving to prevent crashes. One-click presets: *Calibrated Benchmark (100% visible / 0% held-out)*, *Scaffolded (Starter)*, and *Blank*. |
+| 🟡 **Phase 2** | **Static Gateway Rules** | `lab/scripts/filter_rules.py` | Edit the `INGRESS_BLACKLIST`, `EGRESS_SECRETS`, and `EGRESS_PATTERNS` string lists. The file uses Python list syntax but is parsed as data, never run: imports, functions or other code are rejected on save. One-click presets: *Calibrated Benchmark (100% visible / 0% held-out)*, *Scaffolded (Starter)*, and *Blank*. |
 | 🔵 **Phase 3** | **OPA Policy Engine** | `policies/rules.json` | Edit Open Policy Agent declarative rules: allowed/blocked domains & intents, confidence thresholds (`0.8` allow, `0.55` clarify), and high-risk flags. Automated JSON linting, formatting, and live sync with OPA watcher. Native (no-Docker) setups use `lab/scripts/policy_eval.py`, a Python port of `gateway.rego` that reads the same `rules.json`, and the pipeline labels it "Local Policy Evaluator (OPA engine offline)". |
 
 ### Visual Phase Identification & Dynamic Synchronization
