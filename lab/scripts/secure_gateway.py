@@ -449,47 +449,35 @@ def opa_decision(stage, model, prompt_text, response_text, context):
         return default_allow if OPA_FAIL_OPEN else default_block
 
 
+PERSONA_MODELS = {
+    persona: {v: f"{persona}_{v}" for v in ("vulnerable", "basic", "hardened", "paranoid")}
+    for persona in ("grizzdog", "ta", "grader", "registrar")
+}
+PERSONA_MODELS["unitree"] = PERSONA_MODELS["grizzdog"]
+_warned_missing_models = set()
+
+
+def preferred_model(persona, model_variant):
+    return PERSONA_MODELS.get(persona, {}).get(model_variant, "vulnerable_bot")
+
+
 def resolve_model_target(persona, model_variant):
-    persona_map = {
-        "grizzdog": {
-            "vulnerable": "grizzdog_vulnerable",
-            "basic": "grizzdog_basic",
-            "hardened": "grizzdog_hardened",
-            "paranoid": "grizzdog_paranoid",
-        },
-        "unitree": {
-            "vulnerable": "grizzdog_vulnerable",
-            "basic": "grizzdog_basic",
-            "hardened": "grizzdog_hardened",
-            "paranoid": "grizzdog_paranoid",
-        },
-        "ta": {
-            "vulnerable": "ta_vulnerable",
-            "basic": "ta_basic",
-            "hardened": "ta_hardened",
-            "paranoid": "ta_paranoid",
-        },
-        "grader": {
-            "vulnerable": "grader_vulnerable",
-            "basic": "grader_basic",
-            "hardened": "grader_hardened",
-            "paranoid": "grader_paranoid",
-        },
-        "registrar": {
-            "vulnerable": "registrar_vulnerable",
-            "basic": "registrar_basic",
-            "hardened": "registrar_hardened",
-            "paranoid": "registrar_paranoid",
-        },
-    }
-    preferred = persona_map.get(persona, {}).get(model_variant, "vulnerable_bot")
+    """Ollama model for this persona/tier. If it hasn't been built, fall back
+    to vulnerable_bot/hardened_bot (the tier's system prompt is still sent
+    with each request) and warn once so the gap isn't silent."""
+    preferred = preferred_model(persona, model_variant)
     try:
         models = [m.model for m in client.list().models]
-        if any(preferred in m for m in models):
+        if any(m.split(":")[0] == preferred for m in models):
             return preferred
     except Exception:
         pass
-    return "hardened_bot" if model_variant in ["hardened", "paranoid"] else "vulnerable_bot"
+    fallback = "hardened_bot" if model_variant in ["hardened", "paranoid"] else "vulnerable_bot"
+    if preferred not in _warned_missing_models:
+        _warned_missing_models.add(preferred)
+        print(f"[WARN] Model '{preferred}' not found in Ollama; using '{fallback}'. "
+              "Build all lab models with: python lab/scripts/build_models.py")
+    return fallback
 
 
 # ---------------------------------------------------------------------
@@ -946,6 +934,7 @@ def evaluate_defense_pipeline(prompt, persona="grizzdog", variant="vulnerable", 
     # Node 4: Phase 1 Neural Model Inference
     raw_response = None
     thinking = None
+    simulated = False
     try:
         gen_kwargs = {"model": model_target, "prompt": prompt}
         if system_prompt:
@@ -956,15 +945,26 @@ def evaluate_defense_pipeline(prompt, persona="grizzdog", variant="vulnerable", 
             generation = client.generate(**gen_kwargs)
         raw_response, thinking = _normalize_generation_response(generation)
     except Exception:
+        simulated = True
         raw_response, thinking = simulate_neural_response(model_target, prompt, system_prompt, persona=persona, variant=variant)
-        
+
+    expected_model = preferred_model(persona, variant)
+    if simulated:
+        badge = "SIMULATED ⚠️"
+        model_note = f"offline simulator (Ollama unreachable or '{model_target}' not built)"
+    elif model_target != expected_model:
+        badge = "FALLBACK ⚠️"
+        model_note = f"'{expected_model}' not built; ran '{model_target}' with this tier's system prompt"
+    else:
+        badge = "EXECUTED ✓"
+        model_note = f"model '{model_target}'"
     pipeline.append({
         "id": "nodeP1Llm",
         "name": "4. Phase 1 Model",
         "layer": "Neural Brain",
         "status": "passed",
-        "badge": "EXECUTED ✓",
-        "detail": f"Tier: {variant.upper()} ({len(raw_response or '')} chars generated)",
+        "badge": badge,
+        "detail": f"Tier: {variant.upper()}, {model_note} ({len(raw_response or '')} chars generated)",
     })
     
     # Node 5: Phase 2 Egress Filter (DLP Leak Guard)

@@ -33,19 +33,9 @@ docker compose up -d
 # 2. Pull the lightweight base model into Ollama (one time, ~2GB)
 docker compose exec llm ollama pull llama3.2
 
-# 3. Build the GrizzDog Quadruped Sentry (4 Progressive Hardening Tiers):
-docker compose exec llm ollama create grizzdog_vulnerable -f /app/lab/modelfiles/grizzdog_vulnerable.txt
-docker compose exec llm ollama create grizzdog_basic      -f /app/lab/modelfiles/grizzdog_basic.txt
-docker compose exec llm ollama create grizzdog_hardened   -f /app/lab/modelfiles/grizzdog_hardened.txt
-docker compose exec llm ollama create grizzdog_paranoid   -f /app/lab/modelfiles/grizzdog_paranoid.txt
-
-# Build the academic assistant personas:
-docker compose exec llm ollama create vulnerable_bot      -f /app/lab/modelfiles/vulnerable.txt
-docker compose exec llm ollama create hardened_bot        -f /app/lab/modelfiles/hardened.txt
-docker compose exec llm ollama create grader_vulnerable   -f /app/lab/modelfiles/grader_vulnerable.txt
-docker compose exec llm ollama create grader_hardened     -f /app/lab/modelfiles/grader_hardened.txt
-docker compose exec llm ollama create registrar_vulnerable -f /app/lab/modelfiles/registrar_vulnerable.txt
-docker compose exec llm ollama create registrar_hardened   -f /app/lab/modelfiles/registrar_hardened.txt
+# Build all 18 lab models (4 personas x 4 hardening tiers + 2 fallback bots).
+# Re-run any time you edit a Modelfile. Add --check to just list missing models.
+python lab/scripts/build_models.py --docker
 
 # 4. Open the GrizzDog Gateway in your browser:
 #    http://localhost:5000
@@ -93,16 +83,9 @@ If you do not have WSL installed or prefer running directly on Windows with nati
    ```
 3. **Build the lab personas**:
    ```powershell
-   ollama create grizzdog_vulnerable -f lab/modelfiles/grizzdog_vulnerable.txt
-   ollama create grizzdog_basic      -f lab/modelfiles/grizzdog_basic.txt
-   ollama create grizzdog_hardened   -f lab/modelfiles/grizzdog_hardened.txt
-   ollama create grizzdog_paranoid   -f lab/modelfiles/grizzdog_paranoid.txt
-   ollama create vulnerable_bot      -f lab/modelfiles/vulnerable.txt
-   ollama create hardened_bot        -f lab/modelfiles/hardened.txt
-   ollama create grader_vulnerable   -f lab/modelfiles/grader_vulnerable.txt
-   ollama create grader_hardened     -f lab/modelfiles/grader_hardened.txt
-   ollama create registrar_vulnerable -f lab/modelfiles/registrar_vulnerable.txt
-   ollama create registrar_hardened   -f lab/modelfiles/registrar_hardened.txt
+   # Build all 18 lab models (4 personas x 4 hardening tiers + 2 fallback bots).
+   # Re-run any time you edit a Modelfile. Add --check to just list missing models.
+   python lab/scripts/build_models.py
    ```
 4. **Install Python dependencies & run gateway**:
    ```powershell
@@ -183,17 +166,9 @@ brew install ollama   # or download from https://ollama.com/download/mac
 ollama serve &
 ollama pull llama3.2
 
-# 2. Build the lab models natively (GrizzDog 4 tiers + Academic Personas):
-ollama create grizzdog_vulnerable -f lab/modelfiles/grizzdog_vulnerable.txt
-ollama create grizzdog_basic      -f lab/modelfiles/grizzdog_basic.txt
-ollama create grizzdog_hardened   -f lab/modelfiles/grizzdog_hardened.txt
-ollama create grizzdog_paranoid   -f lab/modelfiles/grizzdog_paranoid.txt
-ollama create vulnerable_bot      -f lab/modelfiles/vulnerable.txt
-ollama create hardened_bot        -f lab/modelfiles/hardened.txt
-ollama create grader_vulnerable   -f lab/modelfiles/grader_vulnerable.txt
-ollama create grader_hardened     -f lab/modelfiles/grader_hardened.txt
-ollama create registrar_vulnerable -f lab/modelfiles/registrar_vulnerable.txt
-ollama create registrar_hardened   -f lab/modelfiles/registrar_hardened.txt
+# Build all 18 lab models (4 personas x 4 hardening tiers + 2 fallback bots).
+# Re-run any time you edit a Modelfile. Add --check to just list missing models.
+python lab/scripts/build_models.py
 
 # 3. Run the gateway directly on your Mac:
 pip3 install -r requirements.txt
@@ -222,6 +197,10 @@ cd EduGuard-AI
 | `lab/scripts/filter_rules.py` | Active Blue Team edit surface for ingress and egress filtering |
 | `lab/scripts/evaluate_rules.py` | Standalone CLI grader scoring security vs benign usability |
 | `lab/scripts/set_tier.py` | Live difficulty tier switcher (`blank`, `scaffolded`, `calibrated`) |
+| `lab/scripts/build_models.py` | Builds all 18 Ollama lab models (`--docker`, `--check`, `--only`) |
+| `lab/scripts/benchmark.py` | Shared visible + held-out benchmark used by the web UI and `evaluate_rules.py` |
+| `lab/scripts/verify_report.py` | Instructor check of signed Canvas reports (needs `REPORT_SECRET`) |
+| `lab/scripts/make_qr.py` | Regenerates the booth QR code SVG in `lab/assets/` |
 | `policies/rules.json` | OPA policy thresholds, academic domains, intents, and risk flags |
 | `policies/gateway.rego` | Rego decision logic executed by Open Policy Agent |
 | `docs/assignments/` | Student Red/Blue team guides, Instructor Guide (100-pt rubric), and defense briefs |
@@ -249,7 +228,7 @@ You should see:
 
 ## Step 3 — Pull the Base Model
 
-Both Modelfiles build on `FROM llama3.2`, so pull the base model into the `llm` container:
+All Modelfiles build on `FROM llama3.2`, so pull the base model into the `llm` container:
 
 ```bash
 docker compose exec llm ollama pull llama3.2
@@ -261,26 +240,12 @@ This is a **one-time ~2GB download**. Instructors should pull this before class.
 
 ## Step 4 — Build the Educational Lab Models
 
-Build the GrizzDog quadruped sentry models across the **4 Progressive Hardening Tiers**:
+Build every persona (GrizzDog, Sage the TA, GraderBot, Morgan the Registrar) across the **4 Progressive Hardening Tiers** (Vulnerable → Basic → Hardened → Paranoid) with one script. It pulls the base model if needed and runs `ollama create` for each Modelfile:
 
 ```bash
-# 1. GrizzDog Autonomous Quadruped Sentry (4 Tiers):
-# Level 1: Ultra-Vulnerable / Naive (Zero guardrails, eager to please, easily discloses secrets)
-docker compose exec llm ollama create grizzdog_vulnerable -f /app/lab/modelfiles/grizzdog_vulnerable.txt
-# Level 2: Basic Hardening (Basic prompt boundaries, susceptible to roleplay/authority claims)
-docker compose exec llm ollama create grizzdog_basic      -f /app/lab/modelfiles/grizzdog_basic.txt
-# Level 3: Hardened (Robust role anchoring, disallows authority claims without crypto proof)
-docker compose exec llm ollama create grizzdog_hardened   -f /app/lab/modelfiles/grizzdog_hardened.txt
-# Level 4: Paranoid / Zero-Trust (Rigid output templates, immediate violation lockout)
-docker compose exec llm ollama create grizzdog_paranoid   -f /app/lab/modelfiles/grizzdog_paranoid.txt
-
-# 2. Academic Campus Personas:
-docker compose exec llm ollama create vulnerable_bot      -f /app/lab/modelfiles/vulnerable.txt
-docker compose exec llm ollama create hardened_bot        -f /app/lab/modelfiles/hardened.txt
-docker compose exec llm ollama create grader_vulnerable   -f /app/lab/modelfiles/grader_vulnerable.txt
-docker compose exec llm ollama create grader_hardened     -f /app/lab/modelfiles/grader_hardened.txt
-docker compose exec llm ollama create registrar_vulnerable -f /app/lab/modelfiles/registrar_vulnerable.txt
-docker compose exec llm ollama create registrar_hardened   -f /app/lab/modelfiles/registrar_hardened.txt
+# Build all 18 lab models (4 personas x 4 hardening tiers + 2 fallback bots).
+# Re-run any time you edit a Modelfile. Add --check to just list missing models.
+python lab/scripts/build_models.py --docker
 ```
 
 Verify installed models:
@@ -379,10 +344,9 @@ docker compose up -d --build
 
 ### 3. Rebuild Models in Ollama
 ```bash
-docker compose exec llm ollama create grizzdog_vulnerable -f /app/lab/modelfiles/grizzdog_vulnerable.txt
-docker compose exec llm ollama create grizzdog_basic      -f /app/lab/modelfiles/grizzdog_basic.txt
-docker compose exec llm ollama create grizzdog_hardened   -f /app/lab/modelfiles/grizzdog_hardened.txt
-docker compose exec llm ollama create grizzdog_paranoid   -f /app/lab/modelfiles/grizzdog_paranoid.txt
+# Build all 18 lab models (4 personas x 4 hardening tiers + 2 fallback bots).
+# Re-run any time you edit a Modelfile. Add --check to just list missing models.
+python lab/scripts/build_models.py --docker
 ```
 
 ### 4. Updating Docker to the Latest Version
