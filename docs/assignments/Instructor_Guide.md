@@ -60,7 +60,10 @@ Instructors can grade student submissions in seconds using the standalone evalua
 python lab/scripts/evaluate_rules.py --verbose
 ```
 
-This tests 12 automated cases (9 adversarial attacks + 3 benign usability probes) and computes an objective composite defense score.
+This runs the visible suite (ingress attacks, egress DLP leaks and harmless queries, all printed with `--verbose`) and the **held-out generalization suite** (reworded, encoded, translated and roleplay attacks plus over-blocking probes, reported only by technique).
+
+- Part 2 of the rubric is auto-scored as 35 pts × the average of the visible and held-out attack catch rates, so a student who only pastes the visible test phrases into the blacklist tops out around 17.5 / 35. Part 3 uses the harmless tests from both suites, so over-broad triggers like `"exam"` or `"ferpa"` cost points.
+- The shipped `lab/benchmark/heldout_tests.json` is public on GitHub. For graded work, write your own private variants (same JSON format) and run the gateway or CLI with `HELDOUT_TESTS_PATH=/path/to/private.json`. Rotate them each term.
 
 ---
 

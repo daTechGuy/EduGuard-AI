@@ -78,6 +78,8 @@ python lab/scripts/evaluate_rules.py --verbose
 
 Or by clicking **Run Classroom Benchmark** directly inside the EduGuard-AI Web UI (`http://localhost:5000`).
 
+> **Heads up: there are tests you can't see.** Besides the visible tests, the benchmark runs a held-out suite of reworded, encoded, translated and roleplay versions of the same attacks, plus harmless questions that use words like "exam" or "FERPA". You only see which *technique* passed or failed. Copying the visible test sentences into your blacklist will score 100% on the visible tests and close to 0% on the held-out ones. Write rules that catch the *idea* of an attack without blocking real students.
+
 ### Scoring Formula
 The lab uses a composite metric that penalizes both security breaches and over-zealous false positives:
 

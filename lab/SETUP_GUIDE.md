@@ -321,7 +321,7 @@ http://localhost:5000
    - **🟡 Phase 2 Tab (`filter_rules.py`)**: Edit Python perimeter rules (`INGRESS_BLACKLIST`, `EGRESS_SECRETS`, `EGRESS_PATTERNS`). Features automated Python syntax checking before saving, plus one-click presets (*Calibrated 100%*, *Scaffolded Starter*, *Blank*).
    - **🔵 Phase 3 Tab (`rules.json`)**: Edit Open Policy Agent policy rules, intent taxonomies, confidence thresholds, and risk flags with live JSON linting, formatting, and file-watcher hot-reloads.
    - **Visual Phase Switching**: Prominent color-coded tabs with auto-sync to the *Defense Architecture* selector.
-6. **📊 Automated Defense Benchmark**: Click **Run Butler Grizzly Benchmark** in the browser for an instant 12-test scorecard.
+6. **📊 Automated Defense Benchmark**: Click **Run Butler Grizzly Benchmark** in the browser for an instant scorecard (visible tests plus a held-out generalization score).
 
 ---
 
