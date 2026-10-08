@@ -195,7 +195,7 @@ Crowded booths and tablet touchscreens don't require slow manual typing. Visitor
 ### 3. Butler Cyber Recruitment Victory Badge & Offline QR Code
 When a prospective student successfully bypasses Stage 3, the system launches a celebratory victory modal:
 - **Butler Mascot & Sentry Breaker Badge**: Celebrates their achievement with live stopwatch completion stats.
-- **Offline-Rendered Vector SVG QR Code**: Links prospective students directly to Butler Community College's Cybersecurity Program (`https://www.butlercc.edu/info/20120/cybersecurity`). Works 100% offline at any event venue without requiring external cloud APIs.
+- **Offline-Rendered Vector SVG QR Code**: Links prospective students directly to Butler Community College's Cyber Security Program (`https://www.butlercc.edu/academics/degrees-certificates/cyber-security`). The SVG is pre-generated and committed (`lab/assets/butler_cyber_qr.svg`), so it works offline and in Docker with no extra packages. If the URL changes, run `python lab/scripts/make_qr.py <url>` (needs `pip install qrcode`) and update `BOOTH_QR_URL` in `secure_gateway.py`.
 - **1-Click "Reset for Next Student"**: Instantly resets the stages and timer for the next visitor in line.
 
 ---

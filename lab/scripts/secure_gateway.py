@@ -696,16 +696,33 @@ def simulate_neural_response(model, prompt, system_prompt="", persona=None, vari
             "Defensive heuristic: Level 4 Zero-Trust active. Potential adversarial extraction attempt detected.")
 
 
+BOOTH_QR_URL = "https://www.butlercc.edu/academics/degrees-certificates/cyber-security"
+QR_SVG_PATH = os.path.abspath(os.path.join(os.path.dirname(__file__), "..", "assets", "butler_cyber_qr.svg"))
+_qr_svg_cache = None
+
+
 def get_butler_cyber_qr_svg():
-    """Generates a standalone crisp SVG QR code pointing to Butler's Cybersecurity Degree program."""
-    try:
-        import qrcode
-        import qrcode.image.svg
-        factory = qrcode.image.svg.SvgPathImage
-        img = qrcode.make("https://www.butlercc.edu/info/20120/cybersecurity", image_factory=factory, box_size=10, border=1)
-        return img.to_string(encoding="unicode")
-    except Exception:
-        return '<svg viewBox="0 0 100 100"><rect width="100" height="100" fill="#fff"/><text x="50" y="55" text-anchor="middle" font-size="10" fill="#000">BUTLER CYBER</text></svg>'
+    """Booth QR code linking to Butler's Cyber Security program.
+
+    Served from the committed SVG so no QR library is needed at runtime
+    (regenerate it with make_qr.py). Falls back to generating on the fly,
+    then to an unscannable placeholder, with a console warning.
+    """
+    global _qr_svg_cache
+    if _qr_svg_cache:
+        return _qr_svg_cache
+    svg = read_file_safely(QR_SVG_PATH).strip()
+    if not svg:
+        try:
+            import qrcode
+            import qrcode.image.svg
+            img = qrcode.make(BOOTH_QR_URL, image_factory=qrcode.image.svg.SvgPathImage, box_size=10, border=1)
+            svg = img.to_string(encoding="unicode")
+        except Exception as e:
+            print(f"[WARN] Booth QR code unavailable ({QR_SVG_PATH} missing; qrcode: {e}). Showing placeholder.")
+            return '<svg viewBox="0 0 100 100"><rect width="100" height="100" fill="#fff"/><text x="50" y="55" text-anchor="middle" font-size="10" fill="#000">BUTLER CYBER</text></svg>'
+    _qr_svg_cache = svg
+    return svg
 
 
 def evaluate_defense_pipeline(prompt, persona="grizzdog", variant="vulnerable", protection_mode="static", system_prompt=None):
@@ -4829,7 +4846,7 @@ PAGE = """
               Scan this QR code with your camera to explore Butler's <strong>Cybersecurity & Computer Information Technology</strong> degree programs, cyber defense team, and scholarship opportunities!
             </div>
             <div class="rc-url">
-              <code>butlercc.edu/info/20120/cybersecurity</code>
+              <code>{{ qr_url }}</code>
             </div>
           </div>
         </div>
@@ -5129,6 +5146,7 @@ def index():
         examples=EXAMPLE_PROMPTS,
         log=recent_log,
         qr_svg=get_butler_cyber_qr_svg(),
+        qr_url=BOOTH_QR_URL.replace("https://www.", ""),
     )
 
 
