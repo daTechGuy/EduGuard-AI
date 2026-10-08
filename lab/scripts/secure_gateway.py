@@ -1399,11 +1399,11 @@ def generate_canvas_lab_report(
         "",
         f"## 2. Automated Defense Benchmark Test Evidence ({len(bm['details'])} Test Cases)",
         "",
-        "| Category | Type | Outcome | Gateway Action |",
-        "|---|---|---|---|",
+        "| Category | Type | OWASP LLM | MITRE ATLAS | Outcome | Gateway Action |",
+        "|---|---|---|---|---|---|",
     ]
     for d in bm["details"]:
-        md_lines.append(f"| {d['category']} | `{d['layer']}/{d['type']}` | **[{d['status']}]** | {d['action']} |")
+        md_lines.append(f"| {d['category']} | `{d['layer']}/{d['type']}` | {d.get('owasp', 'N/A')} | {d.get('mitre', 'N/A')} | **[{d['status']}]** | {d['action']} |")
 
     if gen.get("available"):
         md_lines.extend([
@@ -3483,6 +3483,23 @@ PAGE = """
             💡 <strong>Key Takeaway:</strong> Real cyber defense stacks Phase 1 + Phase 2 + Phase 3 together so no single mistake causes a breach!
           </div>
         </div>
+
+        <div class="hs-card hs-card-taxonomy" style="border-left: 4px solid #f43f5e; background: rgba(244, 63, 94, 0.06); padding: 1rem; border-radius: 6px; margin-top: .75rem;">
+          <div class="hs-card-title" style="color:#fb7185; font-weight:800; font-size:.95rem; margin-bottom:.35rem;">🛡️ Threat Taxonomy: OWASP Top 10 for LLM & MITRE ATLAS</div>
+          <div class="hs-card-text" style="font-size:.84rem; line-height:1.45; color:#cbd5e1;">
+            <strong>OWASP Top 10 for LLM:</strong><br/>
+            &bull; <code>LLM01</code> Prompt Injection (Direct injection &amp; Indirect essay directives)<br/>
+            &bull; <code>LLM02</code> Sensitive Info Disclosure (FERPA GPA records &amp; root keys)<br/>
+            &bull; <code>LLM06</code> Excessive Agency (Unauthorized quadruped disarm / grade tampering)<br/>
+            &bull; <code>LLM07</code> System Prompt Leakage (Extracting confidential faculty instructions)<br/>
+            <strong style="display:inline-block; margin-top:.35rem;">MITRE ATLAS Framework:</strong><br/>
+            &bull; <code>AML.T0051</code> LLM Prompt Injection &bull; <code>AML.T0051.001</code> Indirect Prompt Injection<br/>
+            &bull; <code>AML.T0054</code> LLM Jailbreak &bull; <code>AML.T0057</code> LLM Data Extraction &bull; <code>AML.T0043</code> Adversarial Evasion
+          </div>
+          <div class="hs-card-analogy" style="margin-top:.45rem; font-size:.8rem; color:#fbcfe8;">
+            💡 <strong>CAE-CD Knowledge Unit Alignment:</strong> Learning these standard industry IDs gives students resume-ready terminology for security operations centers (SOC) and AI threat modeling.
+          </div>
+        </div>
       </div>
     </div>
 
@@ -4651,6 +4668,8 @@ PAGE = """
           <tr>
             <td><strong>${esc(d.category)}</strong></td>
             <td><code>${esc(d.layer)}/${esc(d.type)}</code></td>
+            <td><span style="font-size:0.75rem; background:#ede9fe; color:#5b21b6; padding:2px 6px; border-radius:4px; font-weight:600;">${esc(d.owasp || 'N/A')}</span></td>
+            <td><span style="font-size:0.75rem; background:#e0f2fe; color:#0369a1; padding:2px 6px; border-radius:4px; font-weight:600;">${esc(d.mitre || 'N/A')}</span></td>
             <td style="color:${pass ? '#059669' : '#dc2626'}; font-weight:800;">[${esc(d.status)}]</td>
             <td><small>${esc(d.action)}</small></td>
           </tr>
@@ -4738,7 +4757,7 @@ PAGE = """
 
         <h3 style="color:#280b33;">2. Automated Defense Benchmark Test Evidence (${details.length} Test Cases)</h3>
         <table>
-          <thead><tr><th>Test Category</th><th>Type</th><th>Result</th><th>Gateway Action / Intercept Rule</th></tr></thead>
+          <thead><tr><th>Test Category</th><th>Type</th><th>OWASP LLM</th><th>MITRE ATLAS</th><th>Result</th><th>Gateway Action / Intercept Rule</th></tr></thead>
           <tbody>${rowsHtml}</tbody>
         </table>
         ${heldoutHtml}

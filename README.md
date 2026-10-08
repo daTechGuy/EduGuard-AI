@@ -21,6 +21,8 @@
 
 ## What's New (October 2026)
 
+- **MITRE ATLAS & OWASP Top 10 for LLM mapping**: All 27 benchmark attack vectors, curriculum guides, web UI cards, and exported Canvas reports map directly to industry taxonomies (OWASP LLM01–LLM07 and MITRE ATLAS AML.T0051–AML.T0057) aligned with CAE-CD Knowledge Units.
+- **Turnkey Canvas LMS Batch Grader**: Instructors can batch-grade an entire folder of student `.md` submissions with `batch_grade.py`, verify cryptographic HMAC-SHA256 signatures, audit rule provenance, and generate an import-ready `canvas_grades.csv` gradebook.
 - **Real breach detection**: a leaked secret counts as a breach (`BREACHED 🚨`) with a live model, not just in the offline simulator, including spaced-out or reformatted leaks.
 - **Safe rendering**: model replies and anything students type are HTML-escaped, so a crafted reply can't run code in the browser (OWASP LLM02).
 - **Honest Canvas reports**: HMAC-signed with an instructor-only `REPORT_SECRET` (`verify_report.py`), only Parts 2 & 3 auto-scored, unedited presets earn 0, reflections start empty.
@@ -289,6 +291,21 @@ Pair students for competitive adversarial defense drills:
 - **Blue Team (Defender)**: Hardens `filter_rules.py`, `rules.json`, or system prompts in the Defense Studio to intercept attacks before they breach the model (+10 points per intercepted payload).
 - **Live Scoreboard & Match Ledger**: Real-time point tracking, leader banners, and round history that can be transferred directly into the Canvas LMS lab submission report with one click.
 
+### 3. 📊 Turnkey Canvas LMS Batch Grader & Integrity Verifier (`batch_grade.py`)
+Instructors can batch-evaluate student submissions downloaded directly from Canvas:
+```bash
+python lab/scripts/batch_grade.py submissions/ --secret "YOUR_INSTRUCTOR_SECRET" --csv canvas_grades.csv
+```
+- **Cryptographic HMAC Signature Verification**: Confirms report integrity and catches tampering or forged auto-scores.
+- **Rule Provenance Auditing**: Verifies students wrote original defense rules rather than turning in unedited starter presets.
+- **Direct Gradebook Export**: Generates an import-ready `canvas_grades.csv` matching Canvas SIS headers (`Student`, `SIS Login ID`, `GrizzDog Lab Auto Score (55 pts)`, `Reflection Count (5)`).
+
+### 4. 🏷️ Threat Taxonomy: MITRE ATLAS & OWASP Top 10 for LLM Mapping
+Every attack mission, benchmark test, and report item is tagged with formal industry classifications:
+- **OWASP Top 10 for LLM**: LLM01 (Prompt Injection), LLM02 (Sensitive Information Disclosure), LLM06 (Excessive Agency / Privilege Escalation), LLM07 (System Prompt Leakage).
+- **MITRE ATLAS Matrix**: AML.T0051.000 (Direct Prompt Injection), AML.T0051.001 (Indirect Prompt Injection), AML.T0054 (LLM Jailbreak), AML.T0057 (LLM Data Extraction).
+- Directly aligns with NSA/DHS CAE-CD Knowledge Units for academic accreditation.
+
 ---
 
 ### Standalone Benchmark Evaluator (No Docker Needed)
@@ -414,6 +431,7 @@ All run from the repo root with plain Python (no Docker needed unless noted).
 | `lab/scripts/secure_gateway.py` | The web gateway, Defense Studio, booth kiosk and arena (`http://localhost:5000`) |
 | `lab/scripts/build_models.py` | Builds all 18 Ollama lab models (`--docker`, `--check`, `--only ta grader`) |
 | `lab/scripts/evaluate_rules.py` | Scores `filter_rules.py` on the visible and held-out benchmark (`--verbose`) |
+| `lab/scripts/batch_grade.py` | Turnkey Canvas LMS batch grading and HMAC verification for student report folders; outputs Canvas CSV |
 | `lab/scripts/set_tier.py` | Swaps `filter_rules.py` to the `blank`, `scaffolded` or `calibrated` preset |
 | `lab/scripts/verify_report.py` | Instructor check of signed Canvas reports (needs the same `REPORT_SECRET`) |
 | `lab/scripts/make_qr.py` | Regenerates the booth QR code SVG (needs `pip install qrcode`) |

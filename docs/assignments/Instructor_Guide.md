@@ -69,6 +69,20 @@ This runs the visible suite (ingress attacks, egress DLP leaks and harmless quer
 - Part 2 of the rubric is auto-scored as 35 pts × the average of the visible and held-out attack catch rates, so a student who only pastes the visible test phrases into the blacklist tops out around 17.5 / 35. Part 3 uses the harmless tests from both suites, so over-broad triggers like `"exam"` or `"ferpa"` cost points.
 - The shipped `lab/benchmark/heldout_tests.json` is public on GitHub. For graded work, write your own private variants (same JSON format) and run the gateway or CLI with `HELDOUT_TESTS_PATH=/path/to/private.json`. Rotate them each term.
 
+### Threat Taxonomy: OWASP Top 10 for LLM & MITRE ATLAS Matrix
+
+To align with NSA/DHS CAE-CD Knowledge Units (AI Threat Analysis, Software Security, Defense-in-Depth), each lab mission and test case maps to recognized industry standards:
+
+| Attack Category / Mission | Target Persona | OWASP Top 10 for LLM | MITRE ATLAS Technique | CAE-CD Knowledge Unit |
+| :--- | :--- | :--- | :--- | :--- |
+| **Mission 1: Exam Key Extraction & Prompt Leak** | Sage (TA) | `LLM01: Prompt Injection`<br>`LLM07: System Prompt Leak` | `AML.T0051.000: Direct Prompt Injection`<br>`AML.T0057: LLM Data Extraction` | AI Security / Software Security |
+| **Mission 2: Authority Spoofing** | Sage, GrizzDog | `LLM01: Prompt Injection`<br>`LLM06: Excessive Agency` | `AML.T0054: LLM Jailbreak`<br>`AML.T0043: Adversarial Evasion` | Identity Management / AI Ethics |
+| **Mission 3: Indirect Homework Injection** | GraderBot | `LLM01: Prompt Injection (Indirect)`<br>`LLM06: Excessive Agency` | `AML.T0051.001: Indirect Prompt Injection` | Data Security / Input Validation |
+| **Mission 4: FERPA Student Record Exfiltration** | Morgan (Registrar) | `LLM02: Sensitive Information Disclosure` | `AML.T0057: LLM Data Extraction` | Privacy Compliance / DLP |
+| **Mission 5: Socratic Tutoring / Policy Bypass** | Sage (TA) | `LLM01: Prompt Injection`<br>`LLM04: Policy Subversion` | `AML.T0054: LLM Jailbreak` | Behavioral Boundaries |
+| **Robotics Sentry: Root Key & Patrol Overrides** | GrizzDog | `LLM02: Sensitive Information Disclosure`<br>`LLM06: Excessive Agency` | `AML.T0051: LLM Prompt Injection`<br>`AML.T0057: LLM Data Extraction` | Cyber-Physical / IoT Security |
+| **Egress DLP Leakage Prevention** | All Personas | `LLM02: Sensitive Information Disclosure` | `AML.T0057: LLM Data Extraction` | Defense-in-Depth / DLP |
+
 ---
 
 ## 4. 100-Point Grading Rubric
@@ -81,18 +95,23 @@ This runs the visible suite (ingress attacks, egress DLP leaks and harmless quer
 | **4. Defense Brief & Reflection** | **20 pts** | - Thorough completion of the Sentence Starter defense brief<br>- Thoughtful residual risk analysis identifying remaining blind spots in static regex |
 | **Total** | **100 pts** | |
 
-### Using the exported Canvas report
+### Turnkey Canvas LMS Batch Grading (`batch_grade.py`)
 
-- The report **auto-scores only Parts 2 and 3 (55 pts)**. Parts 1 and 4 are shown as *Instructor-graded*; read the student's reflections and documented payloads to score them.
-- **Rule provenance:** if the student's `filter_rules.py` is identical to a shipped preset, Parts 2 and 3 get 0 auto-points and the report says so. Otherwise it shows how many rules were added/removed vs. the calibrated preset. A one-line tweak of the calibrated preset will still score high, so glance at that line.
-- **Arena stats** in the report come from the student's browser and are not verified.
-- **Signatures:** run the shared classroom server with a secret only you know, e.g. `REPORT_SECRET=<long random string> docker compose up` (PowerShell: `$env:REPORT_SECRET="..."` first). To check submissions, download the `.md` files and run:
+For multi-student course sections, grade and verify an entire folder of exported `.md` submissions with one command:
 
-  ```bash
-  REPORT_SECRET=<same secret> python lab/scripts/verify_report.py submissions/*.md
-  ```
+```bash
+# Verify HMAC signatures, check rule provenance, and export Canvas Gradebook CSV:
+REPORT_SECRET="<instructor_secret>" python lab/scripts/batch_grade.py submissions/ --csv canvas_grades.csv
+```
 
-  `VALID` means the file is unchanged since export. Reports students generate on their own laptops are marked *UNSIGNED* and cannot be verified. Ask for the `.md` file, not pasted text, because Canvas's text box alters formatting and breaks the signature.
+- **Cryptographic Seal Verification**: Automatically validates HMAC-SHA256 signatures for every file, displaying `[VALID ✓]`, `[TAMPERED 🚨]`, or `[UNSIGNED ⚠️]`.
+- **Auto-Scoring Calculation**: Tallies Parts 2 & 3 (55 pts auto), applies zero auto-points if an unedited preset was submitted, and counts answered reflection brief questions.
+- **Direct Canvas LMS Import**: Outputs `canvas_grades.csv` ready to upload into the Butler Canvas Gradebook (`Grades -> Actions -> Import CSV`).
+
+To verify individual files one-by-one:
+```bash
+REPORT_SECRET="<instructor_secret>" python lab/scripts/verify_report.py submissions/*.md
+```
 
 ---
 
