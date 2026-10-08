@@ -37,6 +37,9 @@ services:
       OPA_URL: http://opa:8181/v1/data/gateway/decision
       OPA_FAIL_OPEN: "false"
       CONTEXT_MODEL: llama3.2
+      # Instructor-only key for signing Canvas lab reports. Leave unset on
+      # student machines; reports are then marked UNSIGNED.
+      REPORT_SECRET: ${REPORT_SECRET:-}
     depends_on:
       - llm
       - opa

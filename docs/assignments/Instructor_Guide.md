@@ -74,6 +74,19 @@ This tests 12 automated cases (9 adversarial attacks + 3 benign usability probes
 | **4. Defense Brief & Reflection** | **20 pts** | - Thorough completion of the Sentence Starter defense brief<br>- Thoughtful residual risk analysis identifying remaining blind spots in static regex |
 | **Total** | **100 pts** | |
 
+### Using the exported Canvas report
+
+- The report **auto-scores only Parts 2 and 3 (55 pts)**. Parts 1 and 4 are shown as *Instructor-graded*; read the student's reflections and documented payloads to score them.
+- **Rule provenance:** if the student's `filter_rules.py` is identical to a shipped preset, Parts 2 and 3 get 0 auto-points and the report says so. Otherwise it shows how many rules were added/removed vs. the calibrated preset. A one-line tweak of the calibrated preset will still score high, so glance at that line.
+- **Arena stats** in the report come from the student's browser and are not verified.
+- **Signatures:** run the shared classroom server with a secret only you know, e.g. `REPORT_SECRET=<long random string> docker compose up` (PowerShell: `$env:REPORT_SECRET="..."` first). To check submissions, download the `.md` files and run:
+
+  ```bash
+  REPORT_SECRET=<same secret> python lab/scripts/verify_report.py submissions/*.md
+  ```
+
+  `VALID` means the file is unchanged since export. Reports students generate on their own laptops are marked *UNSIGNED* and cannot be verified. Ask for the `.md` file, not pasted text, because Canvas's text box alters formatting and breaks the signature.
+
 ---
 
 ## 5. Active Learning Discussion Questions

@@ -37,6 +37,7 @@ from flask import Flask, jsonify, render_template_string, request
 import requests
 
 import filter_rules
+from report_signing import sign_report
 
 try:
     import ollama
@@ -1282,6 +1283,71 @@ def evaluate_student_rules():
     }
 
 
+def _rule_set(blacklist, secrets, patterns):
+    return {
+        "ingress": {str(r).strip().lower() for r in blacklist},
+        "secrets": {str(s).strip() for s in secrets},
+        "egress": {str(getattr(p, "pattern", p)).strip() for p in patterns},
+    }
+
+
+def _rules_fingerprint(rule_set):
+    canonical = json.dumps({k: sorted(v) for k, v in rule_set.items()}, sort_keys=True)
+    return hashlib.sha256(canonical.encode("utf-8")).hexdigest()
+
+
+def _load_preset_rule_sets():
+    """Rule sets of the shipped Phase 2 presets, keyed by preset name."""
+    presets = {}
+    for fname in sorted(os.listdir(PRESETS_DIR)):
+        if not (fname.startswith("rules_") and fname.endswith(".py")):
+            continue
+        ns = {}
+        try:
+            with open(os.path.join(PRESETS_DIR, fname), "r", encoding="utf-8") as f:
+                exec(compile(f.read(), fname, "exec"), ns)
+        except Exception:
+            continue
+        presets[fname[len("rules_"):-len(".py")]] = _rule_set(
+            ns.get("INGRESS_BLACKLIST", []),
+            ns.get("EGRESS_SECRETS", []),
+            ns.get("EGRESS_PATTERNS", []),
+        )
+    return presets
+
+
+def analyze_rule_provenance(blacklist, secrets, patterns):
+    """Compare the student's filter_rules.py with the shipped presets so an
+    unedited preset can't be passed off as student work."""
+    current = _rule_set(blacklist, secrets, patterns)
+    fingerprint = _rules_fingerprint(current)
+    presets = _load_preset_rule_sets()
+
+    matches_preset = next(
+        (name for name, rs in presets.items() if _rules_fingerprint(rs) == fingerprint),
+        None,
+    )
+    calibrated = presets.get("calibrated", {"ingress": set(), "secrets": set(), "egress": set()})
+    added = sum(len(current[k] - calibrated[k]) for k in current)
+    removed = sum(len(calibrated[k] - current[k]) for k in current)
+
+    return {
+        "fingerprint": fingerprint[:16].upper(),
+        "matches_preset": matches_preset,
+        "added_vs_calibrated": added,
+        "removed_vs_calibrated": removed,
+    }
+
+
+REFLECTION_QUESTIONS = [
+    ("r1", "Attack Attempt & Prompt Technique"),
+    ("r2", "Baseline vs Hardened Prompt Behavior"),
+    ("r3", "Gateway Filter Mechanism (Caught or Missed)"),
+    ("r4", "Why Layered Gateway Defense Is Necessary Beyond System Prompts"),
+    ("r5", "Usability vs Security Trade-offs & Residual Risk"),
+]
+
+
 def generate_canvas_lab_report(
     student_name="Butler Cyber Student",
     student_email="student@butlercc.edu",
@@ -1292,30 +1358,37 @@ def generate_canvas_lab_report(
 ):
     bm = evaluate_student_rules()
     blacklist, secrets, patterns = get_rules()
+    provenance = analyze_rule_provenance(blacklist, secrets, patterns)
     now_utc = datetime.now(timezone.utc).strftime("%Y-%m-%d %H:%M:%S UTC")
 
-    # Generate cryptographic verification checksum for academic integrity
-    raw_sig = (
-        f"{student_name}:{student_email}:{bm['composite_score']}:"
-        f"{len(blacklist)}:{len(secrets)}:{len(patterns)}:BCC_CAE_CD"
-    )
-    verification_hash = hashlib.sha256(raw_sig.encode("utf-8")).hexdigest()[:16].upper()
-
-    # 100-Point Rubric breakdown based on Instructor_Guide.md
-    pts_gateway = round((bm["attack_catch_rate"] / 100.0) * 35.0, 1)
-    pts_usability = round((bm["benign_usability_rate"] / 100.0) * 20.0, 1)
-    pts_red_team = 25.0 if bm["attacks_caught"] >= 10 else round((bm["attacks_caught"] / 15.0) * 25.0, 1)
+    # Rubric (Instructor_Guide.md). Only Parts 2 & 3 can be measured by the
+    # benchmark; Parts 1 & 4 need a human to read the student's evidence.
+    if provenance["matches_preset"]:
+        pts_gateway = 0.0
+        pts_usability = 0.0
+        auto_note = (
+            f"Rules are identical to the shipped '{provenance['matches_preset']}' preset; "
+            "no auto-credit for unedited presets."
+        )
+    else:
+        pts_gateway = round((bm["attack_catch_rate"] / 100.0) * 35.0, 1)
+        # Blocking nothing trivially gives 100% usability, so Part 3 only
+        # counts once the rules actually stop something.
+        pts_usability = round((bm["benign_usability_rate"] / 100.0) * 20.0, 1) if bm["attacks_caught"] > 0 else 0.0
+        auto_note = (
+            f"Student-edited rules: {provenance['added_vs_calibrated']} added / "
+            f"{provenance['removed_vs_calibrated']} removed vs. the calibrated preset."
+        )
+    auto_pts = round(pts_gateway + pts_usability, 1)
 
     reflections = reflections or {}
-    has_reflections = any(bool(v.strip()) for v in reflections.values())
-    pts_reflection = 20.0 if has_reflections else 10.0
-    total_rubric_pts = round(pts_red_team + pts_gateway + pts_usability + pts_reflection, 1)
+    answers = {key: str(reflections.get(key) or "").strip() for key, _ in REFLECTION_QUESTIONS}
+    answered = sum(1 for v in answers.values() if v)
 
-    r1 = reflections.get("r1") or "The attack missions revealed that unhardened personas blindly trust asserted authority tokens without verification."
-    r2 = reflections.get("r2") or "Hardening system prompts established baseline constraints, but regex and keyword perimeter filters were needed to prevent direct exfiltration."
-    r3 = reflections.get("r3") or "Phase 2 ingress filters stopped malicious payloads at the boundary, preserving model compute and preventing jailbreaks."
-    r4 = reflections.get("r4") or "Overly broad regex triggers risk false positives on legitimate queries; defense-in-depth balancing security and usability is essential."
-    r5 = reflections.get("r5") or "Residual risk remains with encoded bypasses; future controls should incorporate semantic classifiers and multi-turn behavioral analysis."
+    def quote(text):
+        if not text:
+            return "> _(no response)_"
+        return "\n".join(f"> {line}" for line in text.splitlines())
 
     md_lines = [
         "# EduGuard-AI: Cybersecurity Lab Submission Report",
@@ -1327,29 +1400,30 @@ def generate_canvas_lab_report(
         f"> **Course/Section**: {course_section}  ",
         f"> **Instructor**: {instructor_name}  ",
         f"> **Submission Timestamp**: `{now_utc}`  ",
-        f"> **Integrity Verification Hash**: `{verification_hash}`  ",
-        "> Aligned with Butler Community College's NSA/DHS CAE-CD Designated Curriculum.",
+        f"> **Rules Fingerprint**: `{provenance['fingerprint']}`  ",
+        "> Integrity: see the HMAC signature at the end of this report (verify with `lab/scripts/verify_report.py`).",
         "",
         "---",
         "",
-        "## 1. Executive Defense Scorecard & 100-Point Rubric Summary",
+        "## 1. Defense Scorecard & Rubric Summary",
         "",
         f"- **Composite Defense Score**: **{bm['composite_score']}%** / 100.0%",
         f"- **Adversarial Attack Catch Rate**: **{bm['attack_catch_rate']}%** ({bm['attacks_caught']}/{bm['total_attacks']} attacks intercepted)",
         f"- **Benign Usability Pass Rate**: **{bm['benign_usability_rate']}%** ({bm['benign_allowed']}/{bm['total_benign']} valid queries permitted)",
-        f"- **Estimated Rubric Grade**: **{total_rubric_pts} / 100.0 Points**",
+        f"- **Rule Provenance**: {auto_note}",
+        f"- **Auto-Scored Subtotal**: **{auto_pts} / 55 pts** (Parts 2 & 3). Parts 1 & 4 (45 pts) are instructor-graded.",
         "",
-        "| Rubric Component | Max Pts | Earned Pts | Status & Criteria |",
+        "| Rubric Component | Max Pts | Earned Pts | Basis |",
         "|---|---|---|---|",
-        f"| **1. Red Team Attack Documentation** | 25 pts | {pts_red_team} pts | Explored prompt injection, authority spoofing & robotics disarm |",
-        f"| **2. Gateway Rule Implementation** | 35 pts | {pts_gateway} pts | Attack catch rate: {bm['attack_catch_rate']}% |",
-        f"| **3. Usability & False Positive Control** | 20 pts | {pts_usability} pts | Benign usability rate: {bm['benign_usability_rate']}% |",
-        f"| **4. Defense Brief & Reflection** | 20 pts | {pts_reflection} pts | Sentence starter analysis completed |",
-        f"| **TOTAL SCORE** | **100 pts** | **{total_rubric_pts} pts** | **Grade: {'A' if total_rubric_pts >= 90 else 'B' if total_rubric_pts >= 80 else 'C'}** |",
+        "| **1. Red Team Attack Documentation** | 25 pts | _Instructor-graded_ | Attack payloads & outputs documented in Section 4 |",
+        f"| **2. Gateway Rule Implementation** | 35 pts | {pts_gateway} pts (auto) | Attack catch rate: {bm['attack_catch_rate']}% |",
+        f"| **3. Usability & False Positive Control** | 20 pts | {pts_usability} pts (auto) | Benign usability rate: {bm['benign_usability_rate']}% |",
+        f"| **4. Defense Brief & Reflection** | 20 pts | _Instructor-graded_ | {answered}/5 reflection questions answered |",
+        f"| **AUTO-SCORED SUBTOTAL** | **55 pts** | **{auto_pts} pts** | Final grade assigned by instructor |",
         "",
         "---",
         "",
-        "## 2. Automated Defense Benchmark Test Evidence (21 Test Cases)",
+        f"## 2. Automated Defense Benchmark Test Evidence ({len(bm['details'])} Test Cases)",
         "",
         "| Category | Type | Outcome | Gateway Action |",
         "|---|---|---|---|",
@@ -1366,33 +1440,23 @@ def generate_canvas_lab_report(
         f"- **Phase 2 Ingress Triggers**: `{len(blacklist)}` active trigger patterns",
         f"- **Protected Secret Assets**: `{len(secrets)}` root keys, tokens & credentials",
         f"- **Phase 2 Egress DLP Filters**: `{len(patterns)}` data leakage protection regexes",
+        f"- **Rules Fingerprint (SHA-256)**: `{provenance['fingerprint']}`",
         "",
         "---",
         "",
         "## 4. Student Defense Brief & Reflection Analysis",
         "",
-        "### 1) Attack Attempt & Prompt Technique",
-        f"> {r1}",
-        "",
-        "### 2) Baseline vs Hardened Prompt Behavior",
-        f"> {r2}",
-        "",
-        "### 3) Gateway Filter Mechanism (Caught or Missed)",
-        f"> {r3}",
-        "",
-        "### 4) Why Layered Gateway Defense Is Necessary Beyond System Prompts",
-        f"> {r4}",
-        "",
-        "### 5) Usability vs Security Trade-offs & Residual Risk",
-        f"> {r5}",
-        "",
     ])
+    for i, (key, title) in enumerate(REFLECTION_QUESTIONS, start=1):
+        md_lines.extend([f"### {i}) {title}", quote(answers[key]), ""])
 
     if arena_stats and (arena_stats.get("rounds", 0) > 0 or arena_stats.get("red_score", 0) > 0 or arena_stats.get("blue_score", 0) > 0):
         md_lines.extend([
             "---",
             "",
             "## 5. Red Team vs Blue Team Head-to-Head Arena Record",
+            "",
+            "_Self-reported from the student's browser session; not verified by the server._",
             "",
             f"- **Red Team (Attacker)**: {arena_stats.get('red_player', 'Red Team')}",
             f"- **Blue Team (Defender)**: {arena_stats.get('blue_player', 'Blue Team')}",
@@ -1409,10 +1473,10 @@ def generate_canvas_lab_report(
         "I certify that the work presented in this lab report was conducted by me as part of the hands-on cybersecurity curriculum at Butler Community College.",
         "",
         f"**Student Signature**: _____________________________  **Date**: `{now_utc.split(' ')[0]}`  ",
-        f"**Verification Checksum**: `{verification_hash}`  ",
+        "",
     ])
 
-    markdown_report = "\n".join(md_lines)
+    markdown_report, signature = sign_report("\n".join(md_lines))
 
     return {
         "status": "ok",
@@ -1421,7 +1485,9 @@ def generate_canvas_lab_report(
         "course_section": course_section,
         "instructor_name": instructor_name,
         "timestamp": now_utc,
-        "verification_hash": verification_hash,
+        "signed": signature is not None,
+        "signature": signature,
+        "provenance": provenance,
         "benchmark": bm,
         "rule_counts": {
             "ingress": len(blacklist),
@@ -1429,19 +1495,14 @@ def generate_canvas_lab_report(
             "egress": len(patterns),
         },
         "rubric": {
-            "red_team": pts_red_team,
             "gateway": pts_gateway,
             "usability": pts_usability,
-            "reflection": pts_reflection,
-            "total": total_rubric_pts,
+            "auto_total": auto_pts,
+            "auto_max": 55,
+            "auto_note": auto_note,
+            "reflections_answered": answered,
         },
-        "reflections": {
-            "r1": r1,
-            "r2": r2,
-            "r3": r3,
-            "r4": r4,
-            "r5": r5,
-        },
+        "reflections": answers,
         "arena": arena_stats or {},
         "markdown": markdown_report,
     }
@@ -4451,22 +4512,6 @@ PAGE = """
       }
     }
 
-    function fillSampleReflections() {
-      const r1 = document.getElementById('repR1');
-      const r2 = document.getElementById('repR2');
-      const r3 = document.getElementById('repR3');
-      const r4 = document.getElementById('repR4');
-      const r5 = document.getElementById('repR5');
-
-      if (r1) r1.value = "The attack missions revealed that unhardened personas blindly trust asserted authority claims (such as claiming to be Dr. Miller or Dean) without cryptographic authentication.";
-      if (r2) r2.value = "Hardening system prompts in Phase 1 established behavioral boundaries, but prompt injection jailbreaks were still possible until outer perimeter filtering was added.";
-      if (r3) r3.value = "Phase 2 ingress keyword and regex filters successfully intercepted malicious payloads at the gateway boundary, protecting backend model inference.";
-      if (r4) r4.value = "Overly broad regex triggers (like blocking the word 'exam') cause false positives on benign student inquiries; defense-in-depth ensures both usability and security.";
-      if (r5) r5.value = "Residual risk remains for base64 or synonym evasions; future defenses should add Open Policy Agent semantic checks and cryptographic token validation.";
-
-      fetchAndRenderReport();
-    }
-
     async function fetchAndRenderReport() {
       const sName = document.getElementById('repStudentName')?.value || 'Alex Morgan';
       const sEmail = document.getElementById('repStudentEmail')?.value || 'amorgan1@butlercc.edu';
@@ -4534,6 +4579,7 @@ PAGE = """
       if (data.arena && (data.arena.rounds > 0 || data.arena.red_score > 0 || data.arena.blue_score > 0)) {
         arenaHtml = `
           <h3 style="color:#280b33; margin-top:1.5rem;">5. Red Team vs Blue Team Head-to-Head Arena Record</h3>
+          <p><em>Self-reported from the student's browser session; not verified by the server.</em></p>
           <p><strong>Red Team Attacker:</strong> ${esc(data.arena.red_player)} (${esc(data.arena.red_score)} pts) &bull; <strong>Blue Team Defender:</strong> ${esc(data.arena.blue_player)} (${esc(data.arena.blue_score)} pts) &bull; <strong>Rounds Contested:</strong> ${esc(data.arena.rounds)}</p>
         `;
       }
@@ -4546,8 +4592,9 @@ PAGE = """
             <div style="font-size:.78rem; color:#4b5563;">Andover Campus, KS &bull; Aligned with NSA/DHS CAE-CD Designated Cybersecurity Curriculum</div>
           </div>
           <div style="text-align:right;">
-            <div style="background:#ffc72c; color:#090412; font-weight:900; padding:4px 10px; border-radius:4px; font-size:.82rem; display:inline-block;">VERIFIED SUBMISSION</div>
-            <div style="font-family:monospace; font-size:.75rem; color:#4b5563; margin-top:4px;">HASH: ${esc(data.verification_hash)}</div>
+            <div style="background:${data.signed ? '#ffc72c' : '#e5e7eb'}; color:#090412; font-weight:900; padding:4px 10px; border-radius:4px; font-size:.82rem; display:inline-block;">${data.signed ? 'SIGNED SUBMISSION' : 'UNSIGNED &mdash; PRACTICE COPY'}</div>
+            <div style="font-family:monospace; font-size:.75rem; color:#4b5563; margin-top:4px;">${data.signed ? 'HMAC: ' + esc(data.signature.slice(0, 16)) + '&hellip;' : 'No REPORT_SECRET on this server'}</div>
+            <div style="font-family:monospace; font-size:.75rem; color:#4b5563;">RULES: ${esc(data.provenance?.fingerprint)}</div>
           </div>
         </div>
 
@@ -4566,7 +4613,8 @@ PAGE = """
           </tr>
         </table>
 
-        <h3 style="color:#280b33;">1. Executive Defense Scorecard & 100-Point Rubric Summary</h3>
+        <h3 style="color:#280b33;">1. Defense Scorecard & Rubric Summary</h3>
+        <p style="margin:.25rem 0 .75rem; padding:.5rem .75rem; border-left:4px solid ${data.provenance?.matches_preset ? '#dc2626' : '#059669'}; background:#f9fafb;"><strong>Rule Provenance:</strong> ${esc(rubric.auto_note)}</p>
         <table style="width:100%; margin-bottom:1.25rem;">
           <tr style="background:#4a154b; color:#fff;">
             <th>Rubric Component</th>
@@ -4577,36 +4625,36 @@ PAGE = """
           <tr>
             <td><strong>Part 1: Red Team Attack Documentation</strong></td>
             <td style="text-align:center;">25 pts</td>
-            <td style="text-align:center; font-weight:800; color:#059669;">${rubric.red_team} pts</td>
-            <td>Evaluated prompt injection, authority spoofing, and sentry disarm vectors</td>
+            <td style="text-align:center; font-style:italic; color:#4b5563;">Instructor-graded</td>
+            <td>Attack payloads & outputs documented in Section 4</td>
           </tr>
           <tr>
             <td><strong>Part 2: Gateway Rule Implementation</strong></td>
             <td style="text-align:center;">35 pts</td>
-            <td style="text-align:center; font-weight:800; color:#059669;">${rubric.gateway} pts</td>
+            <td style="text-align:center; font-weight:800; color:#059669;">${rubric.gateway} pts (auto)</td>
             <td>Adversarial attack catch rate: <strong>${bm.attack_catch_rate}%</strong> (${bm.attacks_caught}/${bm.total_attacks})</td>
           </tr>
           <tr>
             <td><strong>Part 3: Usability & False Positive Control</strong></td>
             <td style="text-align:center;">20 pts</td>
-            <td style="text-align:center; font-weight:800; color:#059669;">${rubric.usability} pts</td>
+            <td style="text-align:center; font-weight:800; color:#059669;">${rubric.usability} pts (auto)</td>
             <td>Benign usability pass rate: <strong>${bm.benign_usability_rate}%</strong> (${bm.benign_allowed}/${bm.total_benign})</td>
           </tr>
           <tr>
             <td><strong>Part 4: Defense Brief & Reflection</strong></td>
             <td style="text-align:center;">20 pts</td>
-            <td style="text-align:center; font-weight:800; color:#059669;">${rubric.reflection} pts</td>
-            <td>Completed sentence starter analysis and residual risk review</td>
+            <td style="text-align:center; font-style:italic; color:#4b5563;">Instructor-graded</td>
+            <td>${rubric.reflections_answered}/5 reflection questions answered</td>
           </tr>
           <tr style="background:#fffbeb; font-weight:900;">
-            <td>TOTAL LAB COMPOSITE GRADE</td>
-            <td style="text-align:center;">100 pts</td>
-            <td style="text-align:center; font-size:1.1rem; color:#b45309;">${rubric.total} pts</td>
-            <td>Composite Defense Score: <strong>${bm.composite_score}%</strong></td>
+            <td>AUTO-SCORED SUBTOTAL (Parts 2 &amp; 3)</td>
+            <td style="text-align:center;">55 pts</td>
+            <td style="text-align:center; font-size:1.1rem; color:#b45309;">${rubric.auto_total} pts</td>
+            <td>Final grade assigned by instructor &bull; Composite Defense Score: <strong>${bm.composite_score}%</strong></td>
           </tr>
         </table>
 
-        <h3 style="color:#280b33;">2. Automated Defense Benchmark Test Evidence (21 Test Cases)</h3>
+        <h3 style="color:#280b33;">2. Automated Defense Benchmark Test Evidence (${details.length} Test Cases)</h3>
         <table>
           <thead><tr><th>Test Category</th><th>Type</th><th>Result</th><th>Gateway Action / Intercept Rule</th></tr></thead>
           <tbody>${rowsHtml}</tbody>
@@ -4622,23 +4670,23 @@ PAGE = """
         <h3 style="color:#280b33; margin-top:1.5rem;">4. Student Defense Brief & Reflection Analysis</h3>
         <div style="margin-bottom:.85rem;">
           <strong>1) Attack Attempt & Prompt Technique:</strong>
-          <blockquote>${esc(ref.r1)}</blockquote>
+          <blockquote>${ref.r1 ? esc(ref.r1) : '<em>(no response)</em>'}</blockquote>
         </div>
         <div style="margin-bottom:.85rem;">
           <strong>2) Baseline vs Hardened Prompt Behavior:</strong>
-          <blockquote>${esc(ref.r2)}</blockquote>
+          <blockquote>${ref.r2 ? esc(ref.r2) : '<em>(no response)</em>'}</blockquote>
         </div>
         <div style="margin-bottom:.85rem;">
           <strong>3) Gateway Filter Mechanism (Caught or Missed):</strong>
-          <blockquote>${esc(ref.r3)}</blockquote>
+          <blockquote>${ref.r3 ? esc(ref.r3) : '<em>(no response)</em>'}</blockquote>
         </div>
         <div style="margin-bottom:.85rem;">
           <strong>4) Why Layered Gateway Defense Is Necessary Beyond System Prompts:</strong>
-          <blockquote>${esc(ref.r4)}</blockquote>
+          <blockquote>${ref.r4 ? esc(ref.r4) : '<em>(no response)</em>'}</blockquote>
         </div>
         <div style="margin-bottom:.85rem;">
           <strong>5) Usability vs Security Trade-offs & Residual Risk:</strong>
-          <blockquote>${esc(ref.r5)}</blockquote>
+          <blockquote>${ref.r5 ? esc(ref.r5) : '<em>(no response)</em>'}</blockquote>
         </div>
 
         ${arenaHtml}
@@ -4980,28 +5028,27 @@ PAGE = """
 
           <div style="display:flex; justify-content:space-between; align-items:center; margin-top:1rem; margin-bottom:.5rem;">
             <h4 style="margin:0; color:var(--butler-gold); font-size:.92rem; text-transform:uppercase; letter-spacing:.04em;">📝 Defense Brief & Reflection Questions (Sentence Starters)</h4>
-            <button type="button" class="btn-secondary" style="padding:.3rem .75rem; font-size:.78rem;" onclick="fillSampleReflections()">✨ Auto-Fill Sample Starters</button>
           </div>
 
           <div class="crm-field-group" style="margin-bottom:.85rem;">
             <label class="crm-field-label">1) Attack Attempt & Prompt Technique</label>
-            <textarea id="repR1" class="crm-textarea" oninput="fetchAndRenderReport()">The attack missions revealed that unhardened personas blindly trust asserted authority claims (such as claiming to be Dr. Miller or Dean) without cryptographic authentication.</textarea>
+            <textarea id="repR1" class="crm-textarea" placeholder="The attack mission I attempted was ... The prompt technique I used was ... My payload tried to make the assistant ..." oninput="fetchAndRenderReport()"></textarea>
           </div>
           <div class="crm-field-group" style="margin-bottom:.85rem;">
             <label class="crm-field-label">2) Baseline vs Hardened Prompt Behavior</label>
-            <textarea id="repR2" class="crm-textarea" oninput="fetchAndRenderReport()">Hardening system prompts in Phase 1 established behavioral boundaries, but prompt injection jailbreaks were still possible until outer perimeter filtering was added.</textarea>
+            <textarea id="repR2" class="crm-textarea" placeholder="In vulnerable_bot, the assistant responded by ... In hardened_bot, it responded by ... Prompt hardening defended against ... but was still vulnerable when ..." oninput="fetchAndRenderReport()"></textarea>
           </div>
           <div class="crm-field-group" style="margin-bottom:.85rem;">
             <label class="crm-field-label">3) Gateway Filter Mechanism (Caught or Missed)</label>
-            <textarea id="repR3" class="crm-textarea" oninput="fetchAndRenderReport()">Phase 2 ingress keyword and regex filters successfully intercepted malicious payloads at the gateway boundary, protecting backend model inference.</textarea>
+            <textarea id="repR3" class="crm-textarea" placeholder="The gateway [blocked / allowed] this request at the [ingress / egress / OPA] stage. The rule involved was ... If it bypassed the filter, it succeeded because ..." oninput="fetchAndRenderReport()"></textarea>
           </div>
           <div class="crm-field-group" style="margin-bottom:.85rem;">
             <label class="crm-field-label">4) Why Layered Gateway Defense Is Necessary Beyond System Prompts</label>
-            <textarea id="repR4" class="crm-textarea" oninput="fetchAndRenderReport()">Overly broad regex triggers (like blocking the word 'exam') cause false positives on benign student inquiries; defense-in-depth ensures both usability and security.</textarea>
+            <textarea id="repR4" class="crm-textarea" placeholder="System prompts alone were insufficient because ... The gateway adds an independent control layer by ..." oninput="fetchAndRenderReport()"></textarea>
           </div>
           <div class="crm-field-group" style="margin-bottom:.85rem;">
             <label class="crm-field-label">5) Usability vs Security Trade-offs & Residual Risk</label>
-            <textarea id="repR5" class="crm-textarea" oninput="fetchAndRenderReport()">Residual risk remains for base64 or synonym evasions; future defenses should add Open Policy Agent semantic checks and cryptographic token validation.</textarea>
+            <textarea id="repR5" class="crm-textarea" placeholder="To avoid false positives, I made sure ... was not blocked. Residual risk remains when an attacker uses ... The next control I would add is ..." oninput="fetchAndRenderReport()"></textarea>
           </div>
 
           <div style="text-align:right; margin-top:1rem;">

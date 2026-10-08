@@ -205,10 +205,11 @@ When a prospective student successfully bypasses Stage 3, the system launches a 
 For semester courses, cyber team practices, and CAE-CD hands-on labs, EduGuard-AI includes turnkey workflows for student pairing and automated grading:
 
 ### 1. 📋 Official Canvas LMS Lab Report Exporter (1-Click)
-Students export a complete, tamper-evident submission ready to upload to Butler's Canvas LMS or turn in to instructors:
-- **Automatic 100-Point Rubric Grading**: Maps automated benchmark scores directly to the 4 rubric components (Red Team Attack Documentation, Gateway Rule Implementation, Usability & False Positive Control, and Defense Brief Reflection).
-- **Cryptographic Verification Checksum**: Computes an SHA-256 verification hash based on the student's name, email, score, active rule inventory, and timestamp to prevent student report spoofing.
-- **Integrated Defense Brief Sentence Starters**: Includes the 5 reflection questions with pre-filled sentence starters guiding student analysis of prompt injection techniques and residual risks.
+Students export a submission ready to upload to Butler's Canvas LMS or turn in to instructors:
+- **Partial Auto-Scoring (55 of 100 pts)**: The benchmark scores rubric Parts 2 (Gateway Rules, 35 pts) and 3 (Usability, 20 pts). Parts 1 (Red Team Documentation) and 4 (Reflection) are marked **Instructor-graded**; no overall letter grade is shown.
+- **Rule Provenance Check**: The report includes a fingerprint of the student's `filter_rules.py` and how it differs from the calibrated preset. Rules identical to a shipped preset (blank, scaffolded, calibrated) get **0 auto-points**, and rules that block nothing get no usability credit.
+- **HMAC Signature (instructor-hosted servers)**: If the gateway is started with a `REPORT_SECRET` environment variable, each report ends with an HMAC-SHA256 signature over the whole report. Instructors check submissions with `python lab/scripts/verify_report.py report.md` (same secret), which detects any edit after export. Without `REPORT_SECRET` (e.g. a student's own laptop) the report is clearly marked **UNSIGNED - practice copy**. The signature only means something if students never see the secret.
+- **Defense Brief Sentence Starters**: The 5 reflection boxes start empty, with sentence starters shown as placeholder hints; unanswered questions appear as "(no response)".
 - **Export Formats**:
   - `💾 Download .MD File`: Clean Markdown document formatted for Canvas attachments.
   - `🖨️ Print / Save as PDF`: Styled with official Butler Community College CAE-CD letterhead and student honor pledge signature line.
