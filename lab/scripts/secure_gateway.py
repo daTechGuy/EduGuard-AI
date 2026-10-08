@@ -306,18 +306,52 @@ def save_system_prompt_to_disk(persona, variant, new_prompt, base_model="llama3.
     return filepath, full_content
 
 
+def parse_modelfile(content):
+    """Split a lab Modelfile into (base model, parameters, system prompt).
+
+    The ollama Python client (>= 0.4) no longer accepts raw Modelfile text,
+    so create() needs these as separate fields. Lab Modelfiles only use
+    FROM, PARAMETER and a SYSTEM \"\"\"...\"\"\" block.
+    """
+    header, _, rest = content.partition('SYSTEM """')
+    system = rest.split('"""', 1)[0].strip() if rest else None
+    base, params = None, {}
+    for line in header.splitlines():
+        parts = line.strip().split(None, 2)
+        if len(parts) >= 2 and parts[0].upper() == "FROM":
+            base = parts[1]
+        elif len(parts) == 3 and parts[0].upper() == "PARAMETER":
+            key, raw = parts[1], parts[2].strip()
+            try:
+                value = int(raw) if raw.lstrip("-").isdigit() else float(raw)
+            except ValueError:
+                value = raw.strip('"')
+            # Repeatable parameters (e.g. stop) become lists.
+            if key in params:
+                params[key] = (params[key] if isinstance(params[key], list) else [params[key]]) + [value]
+            else:
+                params[key] = value
+    return base, params, system
+
+
 def rebuild_model_in_ollama(persona, variant):
-    """Invoke client.create to rebuild the model inside Ollama."""
+    """Rebuild persona_variant in Ollama from its Modelfile on disk."""
     persona, variant = normalize_persona_variant(persona, variant)
     filepath = get_modelfile_path(persona, variant)
     model_name = f"{persona}_{variant}"
+    base = None
     try:
         with open(filepath, "r", encoding="utf-8") as f:
-            modelfile_content = f.read()
-        client.create(model=model_name, modelfile=modelfile_content)
+            base, params, system = parse_modelfile(f.read())
+        if not base:
+            return False, f"No FROM line in {os.path.basename(filepath)}; cannot build '{model_name}'."
+        client.create(model=model_name, from_=base, system=system, parameters=params or None)
         return True, f"Model '{model_name}' successfully built in Ollama runtime."
     except Exception as e:
-        return False, f"Ollama runtime notice: {e}"
+        hint = ""
+        if base and "not found" in str(e).lower():
+            hint = f" Pull the base model first (ollama pull {base}) or run: python lab/scripts/build_models.py"
+        return False, f"Ollama runtime notice: {e}.{hint}"
 
 
 # ---------------------------------------------------------------------
