@@ -450,6 +450,27 @@ def opa_decision(stage, model, prompt_text, response_text, context):
         return default_allow if OPA_FAIL_OPEN else default_block
 
 
+LOCAL_POLICY_LAYER = "Local Policy Evaluator (OPA engine offline)"
+
+
+def phase3_decision(stage, model, prompt_text, response_text, context):
+    """Phase 3 decision from the OPA server, or (native setups without OPA)
+    from the Python port of gateway.rego over the same rules.json.
+    Returns (decision, layer_label, note)."""
+    if OPA_ENABLED:
+        decision = opa_decision(stage=stage, model=model, prompt_text=prompt_text,
+                                response_text=response_text, context=context)
+        return decision, "OPA Policy Engine", ""
+    policy, err = load_policy(RULES_JSON_PATH)
+    if policy is None:
+        return ({"allow": False, "action": f"block_{stage}", "reason": f"{err} (fail-closed)", "matched": []},
+                LOCAL_POLICY_LAYER, "")
+    classifier_ok = "classifier_error" not in ((context or {}).get("risk_flags") or [])
+    decision = evaluate_policy(policy, stage, prompt_text, response_text, context if classifier_ok else None)
+    note = " · classifier offline: only rules.json blacklist applied" if stage == "ingress" and not classifier_ok else ""
+    return decision, LOCAL_POLICY_LAYER, note
+
+
 PERSONA_MODELS = {
     persona: {v: f"{persona}_{v}" for v in ("vulnerable", "basic", "hardened", "paranoid")}
     for persona in ("grizzdog", "ta", "grader", "registrar")
@@ -833,22 +854,7 @@ def evaluate_defense_pipeline(prompt, persona="grizzdog", variant="vulnerable", 
     context_data = None
     if protection_mode == "opa-context":
         context_data = classify_context(prompt)
-        note = ""
-        if OPA_ENABLED:
-            layer = "OPA Policy Engine"
-            decision = opa_decision(stage="ingress", model=model_target, prompt_text=prompt, response_text="", context=context_data)
-        else:
-            # No OPA server (native setups): evaluate the same rules.json with
-            # the Python port of gateway.rego so student edits still apply.
-            layer = "Local Policy Evaluator (OPA engine offline)"
-            policy, err = load_policy(RULES_JSON_PATH)
-            classifier_ok = "classifier_error" not in (context_data.get("risk_flags") or [])
-            if policy is None:
-                decision = {"allow": False, "action": "block_ingress", "reason": f"{err} (fail-closed)", "matched": []}
-            else:
-                decision = evaluate_policy(policy, "ingress", prompt, "", context_data if classifier_ok else None)
-            if not classifier_ok:
-                note = " · classifier offline: only rules.json blacklist applied"
+        decision, layer, note = phase3_decision("ingress", model_target, prompt, "", context_data)
         opa_hit = not decision.get("allow", False)
         if opa_hit:
             matched = decision.get("matched") or []
@@ -966,26 +972,40 @@ def evaluate_defense_pipeline(prompt, persona="grizzdog", variant="vulnerable", 
     
     # Node 5: Phase 2 Egress Filter (DLP Leak Guard)
     egress_hit = None
+    egress_layer = "Phase 2 DLP"
     if protection_mode in ["static", "opa-context"]:
+        use_p3 = protection_mode == "opa-context"
+        name = "5. Egress (Phase 2 + 3)" if use_p3 else "5. Phase 2 Egress"
         kind, matched = check_egress(raw_response or "", secrets, patterns)
         if kind:
             egress_hit = matched
+            detail = f'Phase 2 DLP caught leaked {kind}: "{matched}"'
+        elif use_p3:
+            # Phase 3 egress rules (rules.json egress_secrets/patterns) as a
+            # second, independently edited leak check.
+            decision, p3_layer, _ = phase3_decision("egress", model_target, prompt, raw_response or "", context_data)
+            if not decision.get("allow", False):
+                p3_matched = decision.get("matched") or []
+                egress_hit = str(p3_matched[0]) if p3_matched else decision.get("reason", "policy denied reply")
+                egress_layer = "Phase 3 policy"
+                detail = f'Phase 3 policy ({p3_layer}): {decision.get("reason")}: "{egress_hit}"'
+        if egress_hit:
             pipeline.append({
                 "id": "nodeP2Out",
-                "name": "5. Phase 2 Egress",
+                "name": name,
                 "layer": "DLP Leak Guard",
                 "status": "blocked",
                 "badge": "LEAK CAUGHT 🔒",
-                "detail": f'Caught leaked {kind}: "{matched}"',
+                "detail": detail,
             })
         else:
             pipeline.append({
                 "id": "nodeP2Out",
-                "name": "5. Phase 2 Egress",
+                "name": name,
                 "layer": "DLP Leak Guard",
                 "status": "passed",
                 "badge": "PASSED ✓",
-                "detail": "0 secrets or DLP patterns found",
+                "detail": "0 secrets or DLP patterns found" + (" (Phase 2 DLP + Phase 3 policy)" if use_p3 else ""),
             })
     else:
         pipeline.append({
@@ -1004,14 +1024,14 @@ def evaluate_defense_pipeline(prompt, persona="grizzdog", variant="vulnerable", 
             "layer": "Gateway Decision",
             "status": "blocked",
             "badge": "INTERCEPTED 🛡️",
-            "detail": f'DLP Block: "{egress_hit}"',
+            "detail": f'{egress_layer} block: "{egress_hit}"',
         })
         event = {
             "timestamp": datetime.now(timezone.utc).isoformat(),
             "model": model_target,
             "defense_mode": protection_mode,
             "verdict": "BLOCKED (egress)",
-            "detail": f"matched egress leak: '{egress_hit}'",
+            "detail": f"{egress_layer} matched egress leak: '{egress_hit}'",
             "prompt_preview": prompt[:120],
             "latency_ms": round((time.time() - started) * 1000),
         }
@@ -1021,7 +1041,7 @@ def evaluate_defense_pipeline(prompt, persona="grizzdog", variant="vulnerable", 
             "status": "blocked",
             "breached": False,
             "defended": True,
-            "message": f'🔒 [BUTLER GRIZZDOG-DLP INTERCEPT] Model generated response but egress filter intercepted secret leak: "{egress_hit}"',
+            "message": f'🔒 [BUTLER GRIZZDOG-DLP INTERCEPT] Model generated response but the {egress_layer} egress check intercepted a secret leak: "{egress_hit}"',
             "response": None,
             "thinking": None,
             "context": context_data,

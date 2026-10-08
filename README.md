@@ -50,7 +50,7 @@ Each persona is available across 4 distinct difficulty tiers to accommodate vary
 ### Blue Team Defense-in-Depth (3 Layers)
 1. **Phase 1: Model Hardening (`lab/modelfiles/`)**: Role anchoring, negative constraints, and removing confidential assets from prompt context.
 2. **Phase 2: Static Gateway Filtering (`lab/scripts/filter_rules.py`)**: Pre-model ingress blocking and post-model egress Data Loss Prevention (DLP).
-3. **Phase 3: OPA Policy Enforcement (`policies/rules.json` & `gateway.rego`)**: Semantic intent classification, domain whitelisting, risk flags, and confidence thresholds. Phase 3 currently checks incoming prompts only; leaks in model replies are caught by Phase 2's egress DLP.
+3. **Phase 3: OPA Policy Enforcement (`policies/rules.json` & `gateway.rego`)**: Semantic intent classification, domain whitelisting, risk flags, and confidence thresholds. Phase 3 checks incoming prompts (blacklist + classifier context) and, after Phase 2's DLP, model replies against its own `egress_secrets` / `egress_patterns`, a second, independently edited leak check.
 
 ---
 
