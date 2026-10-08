@@ -29,6 +29,9 @@ GrizzDog-AI can be deployed as an interactive, hands-on lab in several academic 
   python lab/scripts/set_tier.py calibrated  # Demonstrates hardened defense-in-depth
   ```
 
+### Option D: Offline / Low-Resource Event Demonstration
+* The gateway includes an automatic **dual-engine execution model**: if Ollama is running, it uses live neural inference (`EXECUTED ✓`); if Ollama is stopped or the machine lacks GPU/RAM, it seamlessly switches to the built-in deterministic simulator (`SIMULATED ⚠️`). This allows demonstrations at conferences, STEM recruitment fairs, or classrooms without requiring local GPU hardware or an active internet connection.
+
 ---
 
 ## 2. Pedagogical Objectives & Competency Mapping

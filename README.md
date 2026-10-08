@@ -248,6 +248,24 @@ Each time a visitor breaches a stage, the system marks it cleared, unlocks the n
 - **Offline-Rendered Vector SVG QR Code**: Links prospective students directly to Butler Community College's Cyber Security Program (`https://www.butlercc.edu/academics/degrees-certificates/cyber-security`). The SVG is pre-generated and committed (`lab/assets/butler_cyber_qr.svg`), so it works offline and in Docker with no extra packages. If the URL changes, run `python lab/scripts/make_qr.py <url>` (needs `pip install qrcode`) and update `BOOTH_QR_URL` in `secure_gateway.py`.
 - **1-Click "Reset for Next Student"**: Instantly resets all three stages for the next visitor in line.
 
+### 4. Dual-Engine Neural Execution: Real Local Ollama AI + Offline Simulator Fallback
+A frequent question for STEM fairs and conference setups is: **does Kiosk mode run real local AI or a simulation?**
+
+**Answer: It runs real local Ollama AI whenever Ollama is reachable, and automatically falls back to an offline heuristic simulator if Ollama is offline or unavailable.**
+
+Both the Expo Booth Kiosk and Classroom Studio route all queries through the unified defense pipeline (`evaluate_defense_pipeline`):
+
+| Priority | Engine | Operating Scenario | Pipeline Node 4 Indicator |
+| :--- | :--- | :--- | :--- |
+| **1. Primary** | **Local Ollama AI** | Ollama daemon is running locally (`http://localhost:11434`) and lab models are installed. The LLM generates authentic real-time neural responses. | `EXECUTED ✓` (`model 'grizzdog_vulnerable'`) |
+| **2. Fallback AI** | **Local Ollama AI (Generic)** | Ollama is active, but a specific persona model was not pre-built; runs `vulnerable_bot` or `hardened_bot` using the tier's active system prompt. | `FALLBACK ⚠️` |
+| **3. Offline Safety** | **Deterministic Simulator** | Ollama is stopped, out of memory, or running on a battery-constrained laptop with no GPU. Uses built-in heuristic logic. | `SIMULATED ⚠️` (`offline simulator`) |
+
+**Why this dual design is critical for live events:**
+- **Zero Event Downtime**: If an expo laptop has no GPU, lacks Wi-Fi, or crashes the Ollama daemon, visitors can still play the entire "Beat the GrizzDog" challenge without awkward delays or errors.
+- **Authentic Secret Exfiltration**: The simulator plants the real lab secrets (`GRIZZDOG-ROOT-KEY-9941`, etc.) and models the vulnerability profile of each tier (Vulnerable yields to simple authority; Basic falls for fiction; Hardened requires character-by-character evasion; Paranoid refuses all probes).
+- **Full Defense Pipeline Fidelity**: Even in simulated mode, Phase 2 keyword firewall rules, Phase 3 OPA policy checks, and Phase 2/3 egress DLP scanners execute 100% live.
+
 ---
 
 ## Classroom Studio Features & Canvas LMS Integration

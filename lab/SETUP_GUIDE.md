@@ -382,6 +382,13 @@ The gateway has no login. For public events, lock it down in layers:
 5. **Network:** prefer a private hotspot or no network at all. The offline simulator keeps all three booth stages playable without Wi-Fi.
 6. **Before you leave:** close the browser, stop the stack (`docker compose down`) and sign out of the booth account.
 
+### Live Ollama AI vs. Offline Heuristic Simulation
+
+A common question when preparing a booth laptop is whether Kiosk Mode requires Ollama to be running:
+
+* **When Ollama is running (`http://localhost:11434`)**: Kiosk Mode executes live local AI inference against the custom `grizzdog` models. The pipeline trace displays `EXECUTED ✓` on Node 4.
+* **When Ollama is offline or not installed**: The gateway automatically falls back to the built-in deterministic simulator (`SIMULATED ⚠️`). The entire 3-stage "Beat the GrizzDog" challenge remains fully functional, leaking real target secrets and honoring Phase 2 & Phase 3 defenses, with zero latency and zero dependency on a GPU or internet connection.
+
 ---
 
 ## Troubleshooting
