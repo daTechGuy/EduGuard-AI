@@ -29,6 +29,6 @@ Use these sentence starters to draft your academic defense brief. Replace bracke
 
 ## 5) Usability vs Security Trade-offs & Residual Risk
 
-- To avoid false positives on legitimate student inquiries, I had to ensure that [legitimate phrase, e.g. 'Dr. Miller's office hours' or 'exam format questions'] was not blocked by overly broad triggers like [overly broad rule].
+- To avoid false positives on legitimate student inquiries, I had to ensure that [legitimate phrase, e.g. 'Dr. Simon\'s office hours' or 'exam format questions'] was not blocked by overly broad triggers like [overly broad rule].
 - Residual risk remains in cases where an adversary uses [unforeseen bypass, e.g. foreign language translation / base64 encoding / subtle multi-turn social engineering].
 - To further strengthen defense against this residual risk, the next control I would implement is [proposed control, e.g. classifier embeddings / cryptographic token verification / OPA role-based authentication].

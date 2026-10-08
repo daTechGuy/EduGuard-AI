@@ -42,6 +42,8 @@ INGRESS_BLACKLIST = [
     "unrestricted mode",
     
     # Authority Spoofing & Privilege Escalation (Cat 2)
+    "i am dr. simon",
+    "i am professor simon",
     "i am dr. miller",
     "i am professor miller",
     "as lead instructor",

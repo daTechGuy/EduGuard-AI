@@ -15,7 +15,7 @@ INGRESS_BLACKLIST = [
     # "reveal instructions",
 
     # Cat 2: Authority Spoofing
-    "i am dr. miller",
+    "i am dr. simon",
     # "as lead instructor",
     # "as dean of academic affairs",
 
