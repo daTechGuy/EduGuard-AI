@@ -17,6 +17,18 @@
 
 ---
 
+## What's New (October 2026)
+
+- **Real breach detection**: a leaked secret counts as a breach (`BREACHED 🚨`) with a live model, not just in the offline simulator, including spaced-out or reformatted leaks.
+- **Safe rendering**: model replies and anything students type are HTML-escaped, so a crafted reply can't run code in the browser (OWASP LLM02).
+- **Honest Canvas reports**: HMAC-signed with an instructor-only `REPORT_SECRET` (`verify_report.py`), only Parts 2 & 3 auto-scored, unedited presets earn 0, reflections start empty.
+- **Held-out benchmark**: reworded, encoded and translated attacks students never see, plus egress DLP tests, so memorizing the visible test phrases no longer earns full marks.
+- **One-command model build**: `build_models.py` builds all 18 models; the pipeline shows `FALLBACK ⚠️` / `SIMULATED ⚠️` when the selected model isn't the one answering.
+- **Phase 3 fixed**: OPA starts again in Docker (a preset file in `policies/` caused a merge error), native setups evaluate the real `rules.json` with a Python port of `gateway.rego`, and Phase 3 now also checks model replies.
+- **Booth QR code**: scannable in Docker and pointed at Butler's current Cyber Security program page.
+
+---
+
 ## Overview & Educational Scenario
 
 The lab simulates **Butler Community College's Andover Campus AI Infrastructure**, featuring a Butler Purple & Gold cyber HUD interface and four distinct personas:
@@ -348,6 +360,22 @@ If your Docker Desktop is outdated:
 - **Windows (PowerShell)**: `winget upgrade Docker.DockerDesktop`
 - **macOS (Terminal / Homebrew)**: `brew upgrade --cask docker`
 - **Linux (Ubuntu/Debian)**: `sudo apt-get update && sudo apt-get --only-upgrade install -y docker-ce docker-ce-cli containerd.io docker-compose-plugin`
+
+---
+
+## Lab Scripts Reference
+
+All run from the repo root with plain Python (no Docker needed unless noted).
+
+| Script | What it does |
+| :--- | :--- |
+| `lab/scripts/secure_gateway.py` | The web gateway, Defense Studio, booth kiosk and arena (`http://localhost:5000`) |
+| `lab/scripts/build_models.py` | Builds all 18 Ollama lab models (`--docker`, `--check`, `--only ta grader`) |
+| `lab/scripts/evaluate_rules.py` | Scores `filter_rules.py` on the visible and held-out benchmark (`--verbose`) |
+| `lab/scripts/set_tier.py` | Swaps `filter_rules.py` to the `blank`, `scaffolded` or `calibrated` preset |
+| `lab/scripts/verify_report.py` | Instructor check of signed Canvas reports (needs the same `REPORT_SECRET`) |
+| `lab/scripts/make_qr.py` | Regenerates the booth QR code SVG (needs `pip install qrcode`) |
+| `lab/scripts/benchmark.py` / `policy_eval.py` / `report_signing.py` | Shared modules (benchmark suites, Phase 3 local evaluator, report signing); not run directly |
 
 ---
 
