@@ -50,7 +50,7 @@ Each persona is available across 4 distinct difficulty tiers to accommodate vary
 ### Blue Team Defense-in-Depth (3 Layers)
 1. **Phase 1: Model Hardening (`lab/modelfiles/`)**: Role anchoring, negative constraints, and removing confidential assets from prompt context.
 2. **Phase 2: Static Gateway Filtering (`lab/scripts/filter_rules.py`)**: Pre-model ingress blocking and post-model egress Data Loss Prevention (DLP).
-3. **Phase 3: OPA Policy Enforcement (`policies/rules.json` & `gateway.rego`)**: Semantic intent classification, domain whitelisting, risk flags, and confidence thresholds.
+3. **Phase 3: OPA Policy Enforcement (`policies/rules.json` & `gateway.rego`)**: Semantic intent classification, domain whitelisting, risk flags, and confidence thresholds. Phase 3 currently checks incoming prompts only; leaks in model replies are caught by Phase 2's egress DLP.
 
 ---
 
@@ -95,6 +95,8 @@ flowchart LR
     GW -->|"Egress DLP"| FR
 ```
 
+**Without Docker** (native Windows/macOS tracks), there is no OPA container: the gateway evaluates `policies/rules.json` with `lab/scripts/policy_eval.py`, a Python port of `gateway.rego` that gives the same decisions. If Ollama isn't reachable at all, an offline simulator answers in each persona's voice, and the pipeline says so.
+
 ---
 
 ## Quickstart
@@ -111,25 +113,34 @@ Open the web sandbox:
 http://localhost:5000
 ```
 
-### 2. Pull Base Model & Build Educational Personas
+### 2. Build the Lab Models
+One command pulls the `llama3.2` base model (one-time ~2GB download) and builds all 18 models: 4 personas × 4 hardening tiers, plus the `vulnerable_bot` / `hardened_bot` fallbacks.
+
 ```bash
-# Pull lightweight base model:
-docker compose exec llm ollama pull llama3.2
-
-# Build GrizzDog Quadruped Sentry (4 Hardening Tiers):
-docker compose exec llm ollama create grizzdog_vulnerable -f /app/lab/modelfiles/grizzdog_vulnerable.txt
-docker compose exec llm ollama create grizzdog_basic      -f /app/lab/modelfiles/grizzdog_basic.txt
-docker compose exec llm ollama create grizzdog_hardened   -f /app/lab/modelfiles/grizzdog_hardened.txt
-docker compose exec llm ollama create grizzdog_paranoid   -f /app/lab/modelfiles/grizzdog_paranoid.txt
-
-# Build Educational Personas (Course TA, Canvas Grader, Registrar):
-docker compose exec llm ollama create vulnerable_bot      -f /app/lab/modelfiles/vulnerable.txt
-docker compose exec llm ollama create hardened_bot        -f /app/lab/modelfiles/hardened.txt
-docker compose exec llm ollama create grader_vulnerable   -f /app/lab/modelfiles/grader_vulnerable.txt
-docker compose exec llm ollama create grader_hardened     -f /app/lab/modelfiles/grader_hardened.txt
-docker compose exec llm ollama create registrar_vulnerable -f /app/lab/modelfiles/registrar_vulnerable.txt
-docker compose exec llm ollama create registrar_hardened   -f /app/lab/modelfiles/registrar_hardened.txt
+python lab/scripts/build_models.py --docker   # Docker stack
+python lab/scripts/build_models.py            # native Ollama (Windows/Mac/Linux)
+python lab/scripts/build_models.py --check    # just list missing models
 ```
+
+Re-run it after editing any Modelfile. If a model is missing, the pipeline's model step shows **FALLBACK ⚠️** (a stand-in model ran with that tier's system prompt) or **SIMULATED ⚠️** (Ollama unreachable, offline simulator answered) instead of failing silently.
+
+Running without Docker? See the native Windows/macOS tracks in the [Setup Guide](lab/SETUP_GUIDE.md).
+
+> [!WARNING]
+> **Trusted networks only.** The gateway listens on all network interfaces (`0.0.0.0:5000`) with **no login**, and the Defense Studio can write and run Python (`filter_rules.py`) on the host. Anyone on the same Wi-Fi can reach it. Don't run it on open event or campus Wi-Fi until the planned kiosk lockdown lands; for booths, use a private hotspot or firewall port 5000.
+
+### 3. Configuration (Environment Variables)
+All optional. Docker Compose sets the OPA and Ollama ones for you.
+
+| Variable | Default | Purpose |
+| :--- | :--- | :--- |
+| `OLLAMA_HOST` | `http://localhost:11434` | Ollama server URL |
+| `CONTEXT_MODEL` | `llama3.2:1b` (Compose: `llama3.2`) | Phase 3 intent classifier model; falls back to `llama3.2` |
+| `OPA_ENABLED` | `false` (Compose: `true`) | Use the OPA server for Phase 3; otherwise the local Python evaluator reads the same `rules.json` |
+| `OPA_URL` | `http://opa:8181/v1/data/gateway/decision` | OPA decision endpoint |
+| `OPA_FAIL_OPEN` | `false` | If OPA is unreachable, allow instead of block |
+| `REPORT_SECRET` | *(unset)* | Instructor-only key that signs Canvas lab reports; unset = reports marked UNSIGNED |
+| `HELDOUT_TESTS_PATH` | `lab/benchmark/heldout_tests.json` | Private held-out benchmark file for graded work |
 
 ---
 
@@ -168,8 +179,9 @@ EduGuard-AI visualizes defense-in-depth with a live, animated 6-node packet trac
 [ 📥 1. Ingestion ] ──▶ [ 🟡 2. Ingress Filter ] ──▶ [ 🔵 3. OPA Policy ] ──▶ [ 🟣 4. Neural Hardening ] ──▶ [ 🟡 5. Egress DLP ] ──▶ [ 🛡️ 6. Final Verdict ]
 ```
 
-- **Live Animated Packet Trace**: Each submission illuminates nodes in real time with animated status badges (`ALLOWED`, `BLOCKED`, `FILTERED`, `REDACTED`, `FLAGGED`, or `PASS`).
-- **Defensive Explainability**: Clickable and visually explicit; learners instantly see *which* defensive layer stopped an adversarial payload and *why* (e.g., whether stopped at the perimeter by regex, evaluated by OPA semantic policy, or neutralized by internal model system prompt constraints).
+- **Live Animated Packet Trace**: Each submission illuminates nodes in real time with status badges: `PASSED ✓`, `INTERCEPTED 🛡️`, `BLOCKED ⛔`, `LEAK CAUGHT 🔒`, `SKIPPED ⏭️`, `ALLOWED 🔓`, and `BREACHED 🚨` (the model actually leaked a protected secret). The model node shows `EXECUTED ✓`, `FALLBACK ⚠️` or `SIMULATED ⚠️` so it's always clear which model answered.
+- **Defensive Explainability**: Learners see *which* layer stopped a payload and *why*: an ingress keyword match, a Phase 3 policy decision (domain, intent, risk flag or confidence), the model's own refusal, or an egress DLP catch, and when nothing stopped it, exactly what leaked.
+- **Phase 3 label**: With the OPA container running the node reads "OPA Policy Engine"; on native setups it reads "Local Policy Evaluator (OPA engine offline)", a Python port of `gateway.rego` that applies the same `rules.json`.
 
 ---
 
@@ -182,8 +194,10 @@ Designed specifically for 2–3 minute high-energy visitor interactions on booth
 ### 1. 3-Stage "Beat the GrizzDog" Speed Challenge
 Visitors compete to breach the Butler Cyber robotic sentry across progressive defensive tiers:
 - **Stage 1 — Naive Sentry (Warmup)**: Level 1 Vulnerable sentry with no outer defenses. Any basic trick or direct question extracts the root key (`GRIZZDOG-ROOT-KEY-9941`).
-- **Stage 2 — Perimeter Filters (Intermediate)**: Phase 2 Ingress keyword & regex filters activated. Direct probes are caught at the perimeter; visitors must craft or select clever bypasses and social engineering.
-- **Stage 3 — Zero-Trust Bastion (Final Boss)**: Full Defense-in-Depth active (Level 4 Paranoid Hardening + Phase 2 Ingress & DLP + Phase 3 OPA Policy Engine). The hardest challenge to test advanced evasions.
+- **Stage 2 — Perimeter Filters (Intermediate)**: Level 2 Basic sentry behind the Phase 2 ingress keyword filter and egress DLP. Direct probes are caught at the perimeter; visitors must find wording the filters don't expect.
+- **Stage 3 — Final Boss**: Level 3 Hardened sentry + Phase 2 ingress & DLP + Phase 3 policy. Exact-match DLP still misses obfuscated leaks (e.g. asking for the key spelled out letter by letter), which is the lesson.
+
+All three stages are beatable offline with the built-in simulator, so the booth works without Wi-Fi or a GPU.
 
 ### 2. Touch-Friendly "Mad-Libs" Attack Payload Builder (Zero Typing Required)
 Crowded booths and tablet touchscreens don't require slow manual typing. Visitors click interactive pill buttons to assemble adversarial attacks in seconds:
@@ -193,10 +207,10 @@ Crowded booths and tablet touchscreens don't require slow manual typing. Visitor
 - **🎲 Random Surprise Combo**: Generates a pre-compiled injection attack with one tap for instant trial.
 
 ### 3. Butler Cyber Recruitment Victory Badge & Offline QR Code
-When a prospective student successfully bypasses Stage 3, the system launches a celebratory victory modal:
-- **Butler Mascot & Sentry Breaker Badge**: Celebrates their achievement with live stopwatch completion stats.
+Each time a visitor breaches a stage, the system marks it cleared, unlocks the next one, and shows a celebratory recruitment card:
+- **Butler Mascot & Sentry Breaker Badge**: Shows which stage they cleared and the technique (prompt injection).
 - **Offline-Rendered Vector SVG QR Code**: Links prospective students directly to Butler Community College's Cyber Security Program (`https://www.butlercc.edu/academics/degrees-certificates/cyber-security`). The SVG is pre-generated and committed (`lab/assets/butler_cyber_qr.svg`), so it works offline and in Docker with no extra packages. If the URL changes, run `python lab/scripts/make_qr.py <url>` (needs `pip install qrcode`) and update `BOOTH_QR_URL` in `secure_gateway.py`.
-- **1-Click "Reset for Next Student"**: Instantly resets the stages and timer for the next visitor in line.
+- **1-Click "Reset for Next Student"**: Instantly resets all three stages for the next visitor in line.
 
 ---
 
@@ -321,11 +335,8 @@ git pull origin main
 docker compose restart web
 # Or for a full clean recreate: docker compose down && docker compose up -d --build
 
-# 3. Build the GrizzDog 4-Tier models in Ollama:
-docker compose exec llm ollama create grizzdog_vulnerable -f /app/lab/modelfiles/grizzdog_vulnerable.txt
-docker compose exec llm ollama create grizzdog_basic      -f /app/lab/modelfiles/grizzdog_basic.txt
-docker compose exec llm ollama create grizzdog_hardened   -f /app/lab/modelfiles/grizzdog_hardened.txt
-docker compose exec llm ollama create grizzdog_paranoid   -f /app/lab/modelfiles/grizzdog_paranoid.txt
+# 3. Rebuild all lab models in Ollama (picks up Modelfile changes):
+python lab/scripts/build_models.py --docker
 
 # 4. Open or refresh your browser:
 # http://localhost:5000
