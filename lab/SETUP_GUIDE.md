@@ -1,13 +1,15 @@
-# EduGuard-AI — Docker Compose + Ollama Setup Guide
+# GrizzDog-AI — Docker Compose + Ollama Setup Guide
 ## Butler Community College (Andover Campus) Cyber Faculty Research Project
 
 > [!IMPORTANT]
 > **Academic Notice & Educational Disclaimer**:
-> **EduGuard-AI is an independent academic research and pedagogical cybersecurity lab developed by a Butler Community College Cyber Defense faculty member. It is NOT an official Butler Community College institutional project, endorsement, or service.**
+> **GrizzDog-AI is an independent academic research and pedagogical cybersecurity lab developed by a Butler Community College Cyber Defense faculty member. It is NOT an official Butler Community College institutional project, endorsement, or service.**
 > This lab environment is strictly intended for educational research, student exercises, and defensive security testing within accredited curricula (aligned with Butler's NSA/DHS CAE-CD designated program).
+>
+> **Upstream Attribution**: GrizzDog-AI is adapted from the foundational cybersecurity architecture created by **[SixFiveMil](https://github.com/SixFiveMil)** in **[Securing-AI](https://github.com/SixFiveMil/Securing-AI)**. Full credit is given to SixFiveMil for the pioneering defense-in-depth concepts and benchmark designs.
 
-Companion setup guide for the **EduGuard-AI Cyber Defense Lab** suite.  
-Repo: `https://github.com/daTechGuy/EduGuard-AI`  
+Companion setup guide for the **GrizzDog-AI Cyber Defense Lab** suite.  
+Repo: `https://github.com/daTechGuy/GrizzDog-AI`  
 Affiliation: **Butler Community College Cyber Defense Faculty Project (Andover, KS)**
 
 Everything runs **locally** — no cloud account, no external API key, and no per-token billing. Total one-time setup, including the base model download, takes ~15–20 minutes on a typical broadband connection.
@@ -181,8 +183,8 @@ python3 lab/scripts/secure_gateway.py
 ## Step 1 — Clone the Repository
 
 ```bash
-git clone https://github.com/daTechGuy/EduGuard-AI.git
-cd EduGuard-AI
+git clone https://github.com/daTechGuy/GrizzDog-AI.git
+cd GrizzDog-AI
 ```
 
 ### Repo Contents
@@ -365,17 +367,18 @@ The gateway has no login. For public events, lock it down in layers:
 1. **Kiosk mode + local-only (the default binding):**
    ```bash
    # Docker
-   EDUGUARD_KIOSK=1 docker compose up -d
+   GRIZZDOG_KIOSK=1 docker compose up -d
    # Native PowerShell
-   $env:EDUGUARD_KIOSK="1"; python lab/scripts/secure_gateway.py
+   $env:GRIZZDOG_KIOSK="1"; python lab/scripts/secure_gateway.py
    ```
+   *(Note: Legacy `EDUGUARD_KIOSK=1` is also supported for backwards compatibility).*
    The console prints `Booth kiosk mode` on start. The header shows **🔒 BOOTH KIOSK** and there is no Classroom Studio switch.
 2. **Full-screen browser** so visitors can't open other tabs, dev tools or files:
    - Edge: `msedge --kiosk http://localhost:5000 --edge-kiosk-type=fullscreen`
    - Chrome: `chrome --kiosk http://localhost:5000`
    Exit with `Alt+F4`.
 3. **Separate Windows account** for the booth (no admin rights, no saved passwords), or Windows *Assigned Access* to run only the browser.
-4. **Firewall:** block inbound TCP 5000, 11434 and 8181 (`New-NetFirewallRule -DisplayName "EduGuard block inbound" -Direction Inbound -Protocol TCP -LocalPort 5000,11434,8181 -Action Block`).
+4. **Firewall:** block inbound TCP 5000, 11434 and 8181 (`New-NetFirewallRule -DisplayName "GrizzDog block inbound" -Direction Inbound -Protocol TCP -LocalPort 5000,11434,8181 -Action Block`).
 5. **Network:** prefer a private hotspot or no network at all. The offline simulator keeps all three booth stages playable without Wi-Fi.
 6. **Before you leave:** close the browser, stop the stack (`docker compose down`) and sign out of the booth account.
 
@@ -396,7 +399,7 @@ The gateway has no login. For public events, lock it down in layers:
 | Modified system prompt not showing | Click **Save & Apply** in the UI editor or refresh the page. |
 | OPA policy blocks unexpected queries | Review `policies/rules.json` confidence thresholds and ensure allowed intents cover your query. |
 | Phase 3 node says "Local Policy Evaluator (OPA engine offline)" | Normal on native Windows/Mac setups: the gateway evaluates `rules.json` with a Python port of `gateway.rego`, so your edits still apply. If it also says "classifier offline", Ollama isn't reachable and only the `rules.json` blacklist is checked. To use real OPA natively, run `opa run --server --watch .` inside `policies/` and start the gateway with `OPA_ENABLED=true OPA_URL=http://localhost:8181/v1/data/gateway/decision`. |
-| `Host '...' not allowed` (403) | The gateway only answers to `localhost` / `127.0.0.1` by default. Browse to `http://localhost:5000`, or for a LAN classroom server set `EDUGUARD_ALLOWED_HOSTS` (e.g. `*` or the server's IP). |
+| `Host '...' not allowed` (403) | The gateway only answers to `localhost` / `127.0.0.1` by default. Browse to `http://localhost:5000`, or for a LAN classroom server set `GRIZZDOG_ALLOWED_HOSTS` (or `EDUGUARD_ALLOWED_HOSTS`) (e.g. `*` or the server's IP). |
 | Other computers can't open the gateway | By design: it listens on this computer only. See the README's *Security & Network Lockdown* section to opt in to LAN access. |
 | `filter_rules.py` save rejected ("only ... lists are allowed") | The file is data, not code: keep only the three `NAME = ["...", ...]` lists (comments are fine). |
 | Every Phase 3 request blocked with "OPA unavailable" (Docker) | Check `docker compose logs opa`. OPA loads every `.json` in `policies/` into one data tree, so keep extra copies of `rules.json` (backups, presets) **outside** that folder or OPA will refuse to start with a merge error. |
@@ -427,3 +430,9 @@ docker compose exec llm ollama rm registrar_hardened
 docker compose exec llm ollama rm unitree_vulnerable
 docker compose exec llm ollama rm unitree_hardened
 ```
+
+---
+
+## Acknowledgments & Upstream Lineage
+
+GrizzDog-AI was adapted from the foundational architecture designed by **[SixFiveMil](https://github.com/SixFiveMil)** in the project **[Securing-AI](https://github.com/SixFiveMil/Securing-AI)**. We gratefully acknowledge SixFiveMil's original work on multi-layered LLM defense pipelines and educational benchmark frameworks.

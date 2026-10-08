@@ -1,4 +1,4 @@
-# EduGuard-AI: Red Team / Blue Team Defense Brief - Sentence Starter Template
+# GrizzDog-AI: Red Team / Blue Team Defense Brief - Sentence Starter Template
 
 Use these sentence starters to draft your academic defense brief. Replace bracketed text with your own evidence and analysis from lab testing.
 

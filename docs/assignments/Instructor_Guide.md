@@ -1,16 +1,17 @@
-# EduGuard-AI: Instructor & Faculty Guide
+# GrizzDog-AI: Instructor & Faculty Guide
 ## Turnkey Guide for Cybersecurity & AI Security Courses
 
 **Affiliation**: Butler Community College Cyber Defense Faculty Project (Andover Campus, KS)  
 **Notice**: Independent faculty research and pedagogical lab. Strictly for educational research and testing; not an official Butler Community College institutional service or endorsement.  
 **Target Course Level**: Undergraduate / Graduate Cybersecurity, Software Security, AI Safety  
-**Standard Mapping**: ACM/IEEE Cybersecurity, NIST NICE Knowledge Units (AI Threat Analysis, Defense-in-Depth)
+**Standard Mapping**: ACM/IEEE Cybersecurity, NIST NICE Knowledge Units (AI Threat Analysis, Defense-in-Depth)  
+**Upstream Attribution**: Adapted from the foundational cybersecurity architecture created by **[SixFiveMil](https://github.com/SixFiveMil)** in **[Securing-AI](https://github.com/SixFiveMil/Securing-AI)**.
 
 ---
 
 ## 1. Course Curriculum Integration
 
-EduGuard-AI can be deployed as an interactive, hands-on lab in several academic formats:
+GrizzDog-AI can be deployed as an interactive, hands-on lab in several academic formats:
 
 ### Option A: One-Week Modular Lab (2 Class Sessions)
 * **Session 1 (Red Team Focus)**: Students explore prompt injection, authority spoofing, and system prompt leakage against `vulnerable_bot` across the three personas.

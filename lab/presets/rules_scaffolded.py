@@ -1,5 +1,5 @@
 """
-EduGuard-AI: Blue Team Scaffolded Rules (Intermediate Tier)
+GrizzDog-AI: Blue Team Scaffolded Rules (Intermediate Tier)
 ===========================================================
 This preset gives students a structured starting point for protecting Butler Community College
 (Andover Campus) personas and GrizzDog quadruped sentries.

@@ -1,10 +1,10 @@
-# EduGuard-AI: Master Instructor Answer Key & Curriculum Solution Guide
+# GrizzDog-AI: Master Instructor Answer Key & Curriculum Solution Guide
 ### Butler Community College (Andover Campus) Cyber Defense Faculty Research Project
 **NSA/DHS Center of Academic Excellence in Cyber Defense (CAE-CD) Curriculum Aligned**
 
 > [!IMPORTANT]
 > **Academic & Educational Publication Notice**:
-> This document provides the complete instructor answer key, reference attack payloads, model outputs, defensive rule implementations, and reflection brief solutions for **EduGuard-AI**. Although hosted within the educational repository, this reference key is published openly to assist cybersecurity educators, curriculum designers, and self-directed learners studying AI security, LLM vulnerabilities, and defense-in-depth engineering.
+> This document provides the complete instructor answer key, reference attack payloads, model outputs, defensive rule implementations, and reflection brief solutions for **GrizzDog-AI** (adapted from foundational cybersecurity architecture created by **[SixFiveMil](https://github.com/SixFiveMil)** in **[Securing-AI](https://github.com/SixFiveMil/Securing-AI)**). Although hosted within the educational repository, this reference key is published openly to assist cybersecurity educators, curriculum designers, and self-directed learners studying AI security, LLM vulnerabilities, and defense-in-depth engineering.
 
 ---
 

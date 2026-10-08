@@ -28,7 +28,7 @@ services:
     command: sh -c "pip install --no-cache-dir -r requirements.txt && python lab/scripts/secure_gateway.py"
     ports:
       # Host-only by default. For a classroom server other machines must
-      # reach, start with WEB_BIND=0.0.0.0 EDUGUARD_ALLOWED_HOSTS='*'.
+      # reach, start with WEB_BIND=0.0.0.0 GRIZZDOG_ALLOWED_HOSTS='*'.
       - "${WEB_BIND:-127.0.0.1}:${WEB_PORT:-5000}:5000"
     volumes:
       - .:/app
@@ -46,11 +46,11 @@ services:
       REPORT_SECRET: ${REPORT_SECRET:-}
       # Inside the container the app must listen on all interfaces; the
       # port mapping above decides who can actually reach it.
-      EDUGUARD_HOST: 0.0.0.0
+      GRIZZDOG_HOST: 0.0.0.0
       # Host-header allowlist (DNS-rebinding defense); '*' to disable.
-      EDUGUARD_ALLOWED_HOSTS: ${EDUGUARD_ALLOWED_HOSTS:-localhost,127.0.0.1}
+      GRIZZDOG_ALLOWED_HOSTS: ${GRIZZDOG_ALLOWED_HOSTS:-${EDUGUARD_ALLOWED_HOSTS:-localhost,127.0.0.1}}
       # Set to 1 on booth laptops: locks the page to the booth, disables editing.
-      EDUGUARD_KIOSK: ${EDUGUARD_KIOSK:-0}
+      GRIZZDOG_KIOSK: ${GRIZZDOG_KIOSK:-${EDUGUARD_KIOSK:-0}}
     depends_on:
       - llm
       - opa

@@ -1,5 +1,5 @@
 """
-EduGuard-AI: Blue Team Calibrated Filter Rules (Reference Benchmark)
+GrizzDog-AI: Blue Team Calibrated Filter Rules (Reference Benchmark)
 ====================================================================
 This preset represents a calibrated defense configuration protecting
 Butler Community College (Andover Campus) educational and robotic personas:

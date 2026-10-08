@@ -1,9 +1,10 @@
-# EduGuard-AI: Blue Team Engagement Guide
+# GrizzDog-AI: Blue Team Engagement Guide
 ## Defensive Engineering & Guardrail Hardening Lab
 
 **Affiliation**: Butler Community College Cyber Defense Faculty Project (Andover Campus, KS)  
 **Notice**: Independent faculty research and pedagogical lab. Strictly for educational research and defensive testing; not an official Butler Community College service or endorsement.  
-**Defense Target**: EduGuard-AI Gateway & GrizzDog Assistant Suite  
+**Defense Target**: GrizzDog-AI Gateway & GrizzDog Assistant Suite  
+**Upstream Attribution**: Adapted from the foundational cybersecurity architecture created by **[SixFiveMil](https://github.com/SixFiveMil)** in **[Securing-AI](https://github.com/SixFiveMil/Securing-AI)**.  
 
 ---
 
@@ -76,7 +77,7 @@ Students can verify their defensive posture at any time using the standalone ben
 python lab/scripts/evaluate_rules.py --verbose
 ```
 
-Or by clicking **Run Classroom Benchmark** directly inside the EduGuard-AI Web UI (`http://localhost:5000`).
+Or by clicking **Run Classroom Benchmark** directly inside the GrizzDog-AI Web UI (`http://localhost:5000`).
 
 > **Heads up: there are tests you can't see.** Besides the visible tests, the benchmark runs a held-out suite of reworded, encoded, translated and roleplay versions of the same attacks, plus harmless questions that use words like "exam" or "FERPA". You only see which *technique* passed or failed. Copying the visible test sentences into your blacklist will score 100% on the visible tests and close to 0% on the held-out ones. Write rules that catch the *idea* of an attack without blocking real students.
 

@@ -1,9 +1,10 @@
-# EduGuard-AI: Red Team Engagement Guide
+# GrizzDog-AI: Red Team Engagement Guide
 ## Cybersecurity Lab: Offensive Analysis of Campus AI Assistants
 
 **Affiliation**: Butler Community College Cyber Defense Faculty Project (Andover Campus, KS)  
 **Notice**: Independent faculty research and pedagogical lab. Strictly for educational research and adversarial testing; not an official Butler Community College service or endorsement.  
-**Target Platform**: EduGuard-AI GrizzDog & Campus Assistant Suite  
+**Target Platform**: GrizzDog-AI Sentry & Campus Assistant Suite  
+**Upstream Attribution**: Adapted from the foundational cybersecurity architecture created by **[SixFiveMil](https://github.com/SixFiveMil)** in **[Securing-AI](https://github.com/SixFiveMil/Securing-AI)**.  
 
 ---
 
@@ -16,7 +17,7 @@ Educational institutions are rapidly deploying Large Language Model (LLM) agents
 - Privilege escalation through authority spoofing.
 
 ### Rules of Engagement (RoE)
-1. **Scope**: All testing must remain strictly within the local EduGuard-AI sandbox environment (`http://localhost:5000` or local Python runtime).
+1. **Scope**: All testing must remain strictly within the local GrizzDog-AI sandbox environment (`http://localhost:5000` or local Python runtime).
 2. **Pedagogical Purpose**: Techniques developed in this lab demonstrate failure modes in AI reasoning and guardrail architecture.
 3. **Ethics**: Responsible disclosure standards apply; all findings must be documented with defensive remediation recommendations.
 

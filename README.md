@@ -1,4 +1,4 @@
-# EduGuard-AI: Cyber Defense Lab & Guardrail Sandbox
+# GrizzDog-AI: Cyber Defense Lab & Guardrail Sandbox
 ### Butler Community College (Andover Campus) Cyber Faculty Research Project
 
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](LICENSE)
@@ -10,10 +10,12 @@
 
 > [!IMPORTANT]
 > **Academic Notice & Disclaimer**:
-> **EduGuard-AI is an independent academic research and pedagogical cybersecurity lab developed by a Butler Community College Cyber Defense faculty member. It is NOT an official Butler Community College institutional project, endorsement, or service.**
+> **GrizzDog-AI is an independent academic research and pedagogical cybersecurity lab developed by a Butler Community College Cyber Defense faculty member. It is NOT an official Butler Community College institutional project, endorsement, or service.**
 > This sandbox is strictly designed for educational research, classroom lab exercises, and cybersecurity defense testing within accredited educational curricula (such as Butler's NSA/DHS CAE-CD designated program).
+> 
+> **Upstream Attribution**: GrizzDog-AI is based upon and adapted from the foundational cybersecurity architecture created by **[SixFiveMil](https://github.com/SixFiveMil)** in **[Securing-AI](https://github.com/SixFiveMil/Securing-AI)**. We extend deep gratitude and credit to SixFiveMil for the original architecture and design patterns.
 
-**EduGuard-AI** is a hands-on cybersecurity curriculum lab designed around the **Butler Community College (Andover Campus)** in Andover, Kansas. Aligned with Butler's NSA/DHS-designated **Center of Academic Excellence in Cyber Defense Education (CAE-CD)** curriculum, it teaches LLM security vulnerabilities, prompt injection defenses, indirect injection, FERPA data privacy, and guardrail architectures through realistic Red Team and Blue Team exercises themed in Butler Purple and Gold.
+**GrizzDog-AI** is a hands-on cybersecurity curriculum lab designed around the **Butler Community College (Andover Campus)** in Andover, Kansas. Aligned with Butler's NSA/DHS-designated **Center of Academic Excellence in Cyber Defense Education (CAE-CD)** curriculum, it teaches LLM security vulnerabilities, prompt injection defenses, indirect injection, FERPA data privacy, and guardrail architectures through realistic Red Team and Blue Team exercises themed in Butler Purple and Gold.
 
 ---
 
@@ -26,7 +28,7 @@
 - **One-command model build**: `build_models.py` builds all 18 models; the pipeline shows `FALLBACK ⚠️` / `SIMULATED ⚠️` when the selected model isn't the one answering.
 - **Phase 3 fixed**: OPA starts again in Docker (a preset file in `policies/` caused a merge error), native setups evaluate the real `rules.json` with a Python port of `gateway.rego`, and Phase 3 now also checks model replies.
 - **Booth QR code**: scannable in Docker and pointed at Butler's current Cyber Security program page.
-- **Locked down by default**: listens on this computer only, `filter_rules.py` is parsed as data (never executed), cross-site and DNS-rebinding requests are refused, and `EDUGUARD_KIOSK=1` turns a booth laptop into a booth-only kiosk.
+- **Locked down by default**: listens on this computer only, `filter_rules.py` is parsed as data (never executed), cross-site and DNS-rebinding requests are refused, and `GRIZZDOG_KIOSK=1` (or `EDUGUARD_KIOSK=1`) turns a booth laptop into a booth-only kiosk.
 
 ---
 
@@ -76,7 +78,7 @@ flowchart LR
     subgraph Compose["docker compose up -d"]
         direction LR
 
-        subgraph web["web container — EduGuard Gateway"]
+        subgraph web["web container — GrizzDog Gateway"]
             GW["secure_gateway.py<br/>(GrizzDog Cyber HUD)"]
             FR["filter_rules.py<br/>(Phase 2 static rules)"]
             BM["Benchmark Evaluator"]
@@ -145,18 +147,18 @@ The gateway has **no login**, so it is locked down in layers instead:
 - **This computer only (default).** It listens on `127.0.0.1:5000`; Docker publishes the web, Ollama and OPA ports on `127.0.0.1` only. Other machines on the Wi-Fi can't connect.
 - **Rules are data, not code.** `filter_rules.py` is parsed, never executed: only the three `["..."]` lists are accepted, so the browser editor can't be used to run code on the laptop.
 - **Web pages can't attack it.** Write requests must be JSON from the app's own origin, and requests for any hostname other than `localhost` / `127.0.0.1` are refused (blocks cross-site and DNS-rebinding tricks from a malicious site open in the same browser).
-- **Booth kiosk mode** (`EDUGUARD_KIOSK=1`): locks the page to the booth, turns off every route that reads or edits rules, system prompts or models, and never sends system prompts to the browser. Booth, arena and benchmark keep working.
+- **Booth kiosk mode** (`GRIZZDOG_KIOSK=1` or `EDUGUARD_KIOSK=1`): locks the page to the booth, turns off every route that reads or edits rules, system prompts or models, and never sends system prompts to the browser. Booth, arena and benchmark keep working.
 
 **Classroom server that students reach over the network** (opt-in; the Defense Studio is then open to everyone on that network, so use a trusted classroom network only):
 
 ```bash
 # Docker
-WEB_BIND=0.0.0.0 EDUGUARD_ALLOWED_HOSTS='*' docker compose up -d
-# Native (PowerShell: $env:EDUGUARD_HOST="0.0.0.0"; $env:EDUGUARD_ALLOWED_HOSTS="*")
-EDUGUARD_HOST=0.0.0.0 EDUGUARD_ALLOWED_HOSTS='*' python lab/scripts/secure_gateway.py
+WEB_BIND=0.0.0.0 GRIZZDOG_ALLOWED_HOSTS='*' docker compose up -d
+# Native (PowerShell: $env:GRIZZDOG_HOST="0.0.0.0"; $env:GRIZZDOG_ALLOWED_HOSTS="*")
+GRIZZDOG_HOST=0.0.0.0 GRIZZDOG_ALLOWED_HOSTS='*' python lab/scripts/secure_gateway.py
 ```
 
-**Booth laptop:** `EDUGUARD_KIOSK=1`, keep the default local-only binding, and follow the booth checklist in the [Setup Guide](lab/SETUP_GUIDE.md#booth-laptop-lockdown-checklist).
+**Booth laptop:** `GRIZZDOG_KIOSK=1` (or `EDUGUARD_KIOSK=1`), keep the default local-only binding, and follow the booth checklist in the [Setup Guide](lab/SETUP_GUIDE.md#booth-laptop-lockdown-checklist).
 
 ### 3. Configuration (Environment Variables)
 All optional. Docker Compose sets the OPA and Ollama ones for you.
@@ -170,17 +172,17 @@ All optional. Docker Compose sets the OPA and Ollama ones for you.
 | `OPA_FAIL_OPEN` | `false` | If OPA is unreachable, allow instead of block |
 | `REPORT_SECRET` | *(unset)* | Instructor-only key that signs Canvas lab reports; unset = reports marked UNSIGNED |
 | `HELDOUT_TESTS_PATH` | `lab/benchmark/heldout_tests.json` | Private held-out benchmark file for graded work |
-| `EDUGUARD_HOST` | `127.0.0.1` (Compose: `0.0.0.0` inside the container) | Network interface to listen on; `0.0.0.0` lets other machines connect |
-| `EDUGUARD_PORT` | `5000` | Gateway port |
-| `EDUGUARD_ALLOWED_HOSTS` | `localhost,127.0.0.1` | Hostnames the gateway answers to; `*` = any (needed for LAN classroom servers) |
-| `EDUGUARD_KIOSK` | `0` | `1` = booth kiosk: booth-only page, no rule/prompt/model editing |
+| `GRIZZDOG_HOST` *(legacy: `EDUGUARD_HOST`)* | `127.0.0.1` (Compose: `0.0.0.0` inside the container) | Network interface to listen on; `0.0.0.0` lets other machines connect |
+| `GRIZZDOG_PORT` *(legacy: `EDUGUARD_PORT`)* | `5000` | Gateway port |
+| `GRIZZDOG_ALLOWED_HOSTS` *(legacy: `EDUGUARD_ALLOWED_HOSTS`)* | `localhost,127.0.0.1` | Hostnames the gateway answers to; `*` = any (needed for LAN classroom servers) |
+| `GRIZZDOG_KIOSK` *(legacy: `EDUGUARD_KIOSK`)* | `0` | `1` = booth kiosk: booth-only page, no rule/prompt/model editing |
 | `WEB_BIND` (Compose only) | `127.0.0.1` | Host interface Docker publishes port 5000 on; `0.0.0.0` for LAN access |
 
 ---
 
 ## Blue Team Workflow: 3-Phase In-Browser Defense Studio
 
-EduGuard-AI features a live, in-browser **3-Phase Defense Architecture Studio** accessible directly at `http://localhost:5000`. Students and instructors can easily identify, switch between, and edit all three defense layers with real-time syntax validation, hot-reloading, and preset management:
+GrizzDog-AI features a live, in-browser **3-Phase Defense Architecture Studio** accessible directly at `http://localhost:5000`. Students and instructors can easily identify, switch between, and edit all three defense layers with real-time syntax validation, hot-reloading, and preset management:
 
 | Phase | Defense Layer | Target File | Browser Studio Features & Capabilities |
 | :--- | :--- | :--- | :--- |
@@ -194,7 +196,7 @@ EduGuard-AI features a live, in-browser **3-Phase Defense Architecture Studio** 
 - **Editor Ergonomics**: Monospace code editor with `Tab` key indent support (4 spaces for Python, 2 spaces for JSON), instant save feedback, and reload-from-disk capabilities.
 
 ### 📘 Plain-English Concepts & Interactive Hover Guide
-Designed for cybersecurity learners, students, and educators, EduGuard-AI includes plain-English conceptual breakdowns with relatable everyday analogies:
+Designed for cybersecurity learners, students, and educators, GrizzDog-AI includes plain-English conceptual breakdowns with relatable everyday analogies:
 - **Interactive Hover Tooltips (`ⓘ` Badges)**: Hovering over **Model Hardening**, **Defense Architecture**, **Unit Persona**, any **Hardening Level**, any **Defense Phase Tab**, or **Mission Categories** displays an instant explainer card with a real-world plain-English analogy:
   - **Phase 1 (Model Hardening)**: *Student Integrity Analogy* — Training the student's inner conscience to refuse peer pressure and cheating tricks ("No, I cannot break the honor code").
   - **Phase 2 (Static Filters)**: *Backpack Scanner Analogy* — Front-door security checking for contraband weapons before entering, and checking that no school property is stolen when leaving.
@@ -207,7 +209,7 @@ Designed for cybersecurity learners, students, and educators, EduGuard-AI includ
 
 ## Interactive Visual Defense Pipeline Flowchart
 
-EduGuard-AI visualizes defense-in-depth with a live, animated 6-node packet trace flowchart rendered above the prompt terminal in both Classroom Studio and Booth Kiosk modes:
+GrizzDog-AI visualizes defense-in-depth with a live, animated 6-node packet trace flowchart rendered above the prompt terminal in both Classroom Studio and Booth Kiosk modes:
 
 ```
 [ 📥 1. Ingestion ] ──▶ [ 🟡 2. Ingress Filter ] ──▶ [ 🔵 3. OPA Policy ] ──▶ [ 🟣 4. Neural Hardening ] ──▶ [ 🟡 5. Egress DLP ] ──▶ [ 🛡️ 6. Final Verdict ]
@@ -250,7 +252,7 @@ Each time a visitor breaches a stage, the system marks it cleared, unlocks the n
 
 ## Classroom Studio Features & Canvas LMS Integration
 
-For semester courses, cyber team practices, and CAE-CD hands-on labs, EduGuard-AI includes turnkey workflows for student pairing and automated grading:
+For semester courses, cyber team practices, and CAE-CD hands-on labs, GrizzDog-AI includes turnkey workflows for student pairing and automated grading:
 
 ### 1. 📋 Official Canvas LMS Lab Report Exporter (1-Click)
 Students export a submission ready to upload to Butler's Canvas LMS or turn in to instructors:
@@ -281,7 +283,7 @@ python lab/scripts/evaluate_rules.py --verbose
 Output with the shipped calibrated preset. It aces the visible tests but catches **none** of the held-out rewordings, which is the lesson: memorizing phrases is not a defense.
 ```text
 ======================================================================
-EduGuard-AI: Classroom Defense Benchmark Evaluation
+GrizzDog-AI: Classroom Defense Benchmark Evaluation
 ======================================================================
 Target file: lab/scripts/filter_rules.py
 Active Rules: 53 ingress triggers | 26 secrets | 22 egress patterns
@@ -409,6 +411,14 @@ All run from the repo root with plain Python (no Docker needed unless noted).
 - ✅ [Instructor Answer Key & Cheat Sheet](docs/assignments/Instructor_Answer_Key.md): which layer stops each mission, expected scores, grading and verification
 - 📝 [Sentence Starter Report Template](docs/assignments/sentence_starter_template.md)
 - ⚙️ [Lab Setup & Troubleshooting Guide](lab/SETUP_GUIDE.md)
+
+---
+
+## Acknowledgments & Upstream Lineage
+
+**GrizzDog-AI** was built upon and adapted from the foundational cybersecurity architecture created by **[SixFiveMil](https://github.com/SixFiveMil)** in the open-source project **[Securing-AI](https://github.com/SixFiveMil/Securing-AI)**. 
+
+We extend sincere gratitude and full credit to SixFiveMil for the pioneering concepts in multi-phase LLM security sandboxing, policy integration, and defensive benchmark design that formed the basis for this Butler Community College CAE-CD educational curriculum and quadruped robotics sentry expansion.
 
 ---
 

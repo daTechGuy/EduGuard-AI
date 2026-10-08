@@ -1,8 +1,9 @@
 """
-EduGuard-AI Defense Benchmark
+GrizzDog-AI Defense Benchmark
 =============================
 Shared by secure_gateway.py (web UI, Canvas report) and evaluate_rules.py
 (standalone CLI) so both always score the same tests.
+Adapted from foundational architecture by SixFiveMil (https://github.com/SixFiveMil/Securing-AI).
 
 Two suites:
   * BENCHMARK_TESTS (visible): students see every prompt. Ingress tests

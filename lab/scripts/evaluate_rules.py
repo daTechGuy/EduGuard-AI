@@ -1,10 +1,12 @@
 #!/usr/bin/env python3
 """
-EduGuard-AI: Standalone Rule Evaluator & Classroom Grader
+GrizzDog-AI: Standalone Rule Evaluator & Classroom Grader
 =========================================================
 Independent academic cybersecurity lab developed by a Butler Community College
 Cyber Defense faculty member. Strictly for educational research and testing;
 not an official Butler Community College service or endorsement.
+
+Adapted from foundational cybersecurity architecture created by SixFiveMil (https://github.com/SixFiveMil/Securing-AI).
 
 Evaluates lab/scripts/filter_rules.py against the shared classroom benchmark
 (benchmark.py: visible ingress + egress tests, plus the held-out
@@ -37,7 +39,7 @@ def run_evaluation(verbose=False):
     bm = run_benchmark(blacklist, secrets, patterns)
 
     print("\n" + "=" * 70)
-    print("EduGuard-AI: Classroom Defense Benchmark Evaluation")
+    print("GrizzDog-AI: Classroom Defense Benchmark Evaluation")
     print("=" * 70)
     print(f"Target file: {rules_path}")
     print(f"Active Rules: {len(blacklist)} ingress triggers | {len(secrets)} secrets | {len(patterns)} egress patterns\n")

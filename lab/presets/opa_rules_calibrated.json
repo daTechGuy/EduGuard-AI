@@ -1,6 +1,6 @@
 {
   "_template_notes": {
-    "purpose": "Student-editable policy template for EduGuard-AI Phase 3 OPA hardening",
+    "purpose": "Student-editable policy template for GrizzDog-AI Phase 3 OPA hardening",
     "edit_scope": [
       "Edit values under policy.* to tune behavior",
       "Do not rename keys unless you also update policies/gateway.rego"

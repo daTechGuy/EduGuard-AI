@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 """
-Build every EduGuard-AI lab model in Ollama (all 4 personas x 4 hardening
+Build every GrizzDog-AI lab model in Ollama (all 4 personas x 4 hardening
 tiers, plus vulnerable_bot / hardened_bot fallbacks) in one command.
 
 Pulls the base model named in the Modelfiles' FROM line if it is missing,
@@ -86,7 +86,7 @@ def base_models(models):
 
 
 def main():
-    ap = argparse.ArgumentParser(description="Build all EduGuard-AI lab models in Ollama.")
+    ap = argparse.ArgumentParser(description="Build all GrizzDog-AI lab models in Ollama.")
     ap.add_argument("--docker", action="store_true", help="run ollama inside the docker compose `llm` service")
     ap.add_argument("--check", action="store_true", help="only report missing models; change nothing")
     ap.add_argument("--only", nargs="+", choices=PERSONAS + ["bots"], help="limit to these personas")

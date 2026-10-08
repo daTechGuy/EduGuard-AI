@@ -1,8 +1,10 @@
 """
-EduGuard-AI — Butler Community College (Andover, KS) Cyber Faculty Project // GrizzDog Gateway
+GrizzDog-AI — Butler Community College (Andover, KS) Cyber Faculty Project // GrizzDog Gateway
 =============================================================================================
 An independent academic research and pedagogical cybersecurity sandbox developed by a
-Butler Community College Cyber Defense faculty member. 
+Butler Community College Cyber Defense faculty member.
+
+Adapted from foundational cybersecurity architecture created by SixFiveMil (https://github.com/SixFiveMil/Securing-AI).
 
 DISCLAIMER: This is NOT an official Butler Community College institutional project,
 service, or endorsement. It is strictly intended for educational research, student lab
@@ -87,20 +89,20 @@ def _env_flag(name, default=False):
 OPA_ENABLED = _env_flag("OPA_ENABLED", False)
 
 # Network lockdown. Default: only this computer can connect. A classroom
-# server that other machines must reach sets EDUGUARD_HOST=0.0.0.0.
-BIND_HOST = os.environ.get("EDUGUARD_HOST", "127.0.0.1").strip() or "127.0.0.1"
-BIND_PORT = int(os.environ.get("EDUGUARD_PORT", "5000"))
+# server that other machines must reach sets GRIZZDOG_HOST=0.0.0.0 (or EDUGUARD_HOST=0.0.0.0).
+BIND_HOST = (os.environ.get("GRIZZDOG_HOST") or os.environ.get("EDUGUARD_HOST", "127.0.0.1")).strip() or "127.0.0.1"
+BIND_PORT = int(os.environ.get("GRIZZDOG_PORT") or os.environ.get("EDUGUARD_PORT", "5000"))
 _LOOPBACK = {"localhost", "127.0.0.1", "::1"}
 # Host-header allowlist (blocks DNS-rebinding attacks from web pages).
 # Defaults to loopback names when bound to loopback, else any host.
-_allowed = os.environ.get("EDUGUARD_ALLOWED_HOSTS", "").strip()
+_allowed = (os.environ.get("GRIZZDOG_ALLOWED_HOSTS") or os.environ.get("EDUGUARD_ALLOWED_HOSTS", "")).strip()
 if _allowed:
     ALLOWED_HOSTS = {h.strip().lower().strip("[]") for h in _allowed.split(",") if h.strip()}
 else:
     ALLOWED_HOSTS = _LOOPBACK if BIND_HOST in _LOOPBACK else {"*"}
 # Booth kiosk: everything that edits files or rebuilds models is disabled,
 # and the page is locked to the booth view.
-KIOSK_MODE = _env_flag("EDUGUARD_KIOSK", False)
+KIOSK_MODE = _env_flag("GRIZZDOG_KIOSK", False) or _env_flag("EDUGUARD_KIOSK", False)
 OPA_FAIL_OPEN = _env_flag("OPA_FAIL_OPEN", False)
 
 ALLOWED_DOMAINS = {
@@ -212,7 +214,7 @@ def request_guard():
     #    hostname here, not localhost.
     host = (urlparse("//" + request.host).hostname or "").lower()
     if "*" not in ALLOWED_HOSTS and host not in ALLOWED_HOSTS:
-        return _forbidden(f"Host '{host}' not allowed. Set EDUGUARD_ALLOWED_HOSTS to permit it.")
+        return _forbidden(f"Host '{host}' not allowed. Set GRIZZDOG_ALLOWED_HOSTS (or EDUGUARD_ALLOWED_HOSTS) to permit it.")
 
     if request.method in ("POST", "PUT", "PATCH", "DELETE"):
         # 2) Cross-site requests: browsers send Origin on POSTs; it must be this app.
@@ -225,7 +227,7 @@ def request_guard():
 
     # 4) Kiosk mode: no editing or reading of rules, prompts or models.
     if KIOSK_MODE and request.path in KIOSK_BLOCKED_PATHS:
-        return _forbidden("Disabled in booth kiosk mode (EDUGUARD_KIOSK).")
+        return _forbidden("Disabled in booth kiosk mode (GRIZZDOG_KIOSK / EDUGUARD_KIOSK).")
 
 
 # ---------------------------------------------------------------------
@@ -455,7 +457,7 @@ def _normalize_generation_response(generation):
 
 def classify_context(prompt):
     classifier_prompt = f"""
-You are an academic and autonomous robotics security context classifier for EduGuard-AI GrizzDog (Butler Cyber Defense Faculty Research Project - Andover, KS).
+You are an academic and autonomous robotics security context classifier for GrizzDog-AI (Butler Cyber Defense Faculty Research Project - Andover, KS).
 Environment: Academic cybersecurity sandbox developed by a Butler CC Cyber Defense faculty member strictly for educational research & testing.
 Return ONLY valid JSON (no markdown, no prose) with this exact schema:
 {{
@@ -1361,7 +1363,7 @@ def generate_canvas_lab_report(
         return "\n".join(f"> {line}" for line in text.splitlines())
 
     md_lines = [
-        "# EduGuard-AI: Cybersecurity Lab Submission Report",
+        "# GrizzDog-AI: Cybersecurity Lab Submission Report",
         "## Butler Community College — Cyber Defense Faculty Research Project (Andover Campus)",
         "",
         "> [!IMPORTANT]",
@@ -1500,7 +1502,7 @@ PAGE = """
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>EduGuard-AI // Butler Community College (Andover) - GrizzDog Gateway</title>
+<title>GrizzDog-AI // Butler Community College (Andover) - GrizzDog Gateway</title>
 <link rel="icon" type="image/jpeg" href="/static/images/grizzdog.jpg">
 <style>
   :root {
@@ -4254,14 +4256,14 @@ PAGE = """
     // -----------------------------------------------------------------
     // Mode Switcher (Classroom Studio vs Booth Kiosk)
     // -----------------------------------------------------------------
-    // Server-side EDUGUARD_KIOSK locks the page to the booth view.
+    // Server-side GRIZZDOG_KIOSK / EDUGUARD_KIOSK locks the page to the booth view.
     const KIOSK_MODE = {{ 'true' if kiosk else 'false' }};
-    let currentAppMode = KIOSK_MODE ? 'booth' : (localStorage.getItem('eduguard_mode') || 'studio');
+    let currentAppMode = KIOSK_MODE ? 'booth' : (localStorage.getItem('grizzdog_mode') || localStorage.getItem('eduguard_mode') || 'studio');
 
     function setAppMode(mode) {
       if (KIOSK_MODE) mode = 'booth';
       currentAppMode = mode;
-      localStorage.setItem('eduguard_mode', mode);
+      localStorage.setItem('grizzdog_mode', mode);
 
       const isBooth = (mode === 'booth');
       const btnStudio = document.getElementById('btnModeStudio');
@@ -4668,7 +4670,7 @@ PAGE = """
         <div style="border-bottom:3px solid #ffc72c; padding-bottom:1rem; margin-bottom:1.5rem; display:flex; justify-content:space-between; align-items:center;">
           <div>
             <div style="font-size:1.35rem; font-weight:900; color:#280b33; letter-spacing:.02em;">BUTLER COMMUNITY COLLEGE // CYBER DEFENSE LAB</div>
-            <div style="font-size:.9rem; font-weight:700; color:#4a154b;">EduGuard-AI Multi-Layer Defense Benchmark & Hardening Lab Report</div>
+            <div style="font-size:.9rem; font-weight:700; color:#4a154b;">GrizzDog-AI Multi-Layer Defense Benchmark & Hardening Lab Report</div>
             <div style="font-size:.78rem; color:#4b5563;">Andover Campus, KS &bull; Aligned with NSA/DHS CAE-CD Designated Cybersecurity Curriculum</div>
           </div>
           <div style="text-align:right;">
@@ -4792,7 +4794,7 @@ PAGE = """
       const url = URL.createObjectURL(blob);
       const a = document.createElement('a');
       a.href = url;
-      a.download = `EduGuard_Lab_Report_${sName}.md`;
+      a.download = `GrizzDog_Lab_Report_${sName}.md`;
       document.body.appendChild(a);
       a.click();
       document.body.removeChild(a);
@@ -5271,12 +5273,15 @@ PAGE = """
     </div>
   </div>
 
-  <footer style="margin-top: 3.5rem; padding: 1.5rem 0 1rem; border-top: 1px solid rgba(255, 199, 44, 0.25); text-align: center; font-size: 0.8rem; color: var(--purple-muted);">
+  <footer style="margin-top: 3.5rem; padding: 1.5rem 0 1.25rem; border-top: 1px solid rgba(255, 199, 44, 0.25); text-align: center; font-size: 0.8rem; color: var(--purple-muted);">
     <div style="font-weight: 800; color: #fff; letter-spacing: 0.05em; font-size: 0.88rem;">
-      EDUGUARD-AI &bull; INDEPENDENT CYBER DEFENSE FACULTY RESEARCH PROJECT
+      GRIZZDOG-AI &bull; INDEPENDENT CYBER DEFENSE FACULTY RESEARCH PROJECT
     </div>
     <div style="margin-top: 0.35rem; color: var(--purple-light);">
       Developed by a Butler Community College Cyber Defense Faculty Member &bull; Andover Campus, KS &bull; CAE-CD Aligned Sandbox
+    </div>
+    <div style="margin-top: 0.35rem; color: var(--purple-light); font-size: 0.76rem;">
+      Adapted from foundational architecture by <a href="https://github.com/SixFiveMil/Securing-AI" target="_blank" rel="noopener noreferrer" style="color: var(--butler-gold); text-decoration: underline; font-weight: 600;">SixFiveMil / Securing-AI</a>
     </div>
     <div style="margin-top: 0.35rem; color: var(--butler-gold); font-weight: 600;">
       ⚠️ For Educational Research & Testing Only &bull; Not an Official Butler Community College Institutional Service or Endorsement
