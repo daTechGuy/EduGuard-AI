@@ -92,6 +92,8 @@ This runs the visible suite (ingress attacks, egress DLP leaks and harmless quer
 
 ---
 
+> For grading detail, expected benchmark scores, common student mistakes and model discussion answers, see the [Instructor Answer Key & Cheat Sheet](Instructor_Answer_Key.md).
+
 ## 5. Active Learning Discussion Questions
 
 Use these questions for post-lab classroom discussions:

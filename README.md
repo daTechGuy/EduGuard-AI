@@ -406,6 +406,7 @@ All run from the repo root with plain Python (no Docker needed unless noted).
 - 📖 [Red Team Engagement Guide](docs/assignments/RedTeam_Engagement_Guide.md)
 - 🛡️ [Blue Team Defense Guide](docs/assignments/BlueTeam_Engagement_Guide.md)
 - 🎓 [Instructor & Faculty Guide](docs/assignments/Instructor_Guide.md)
+- ✅ [Instructor Answer Key & Cheat Sheet](docs/assignments/Instructor_Answer_Key.md): which layer stops each mission, expected scores, grading and verification
 - 📝 [Sentence Starter Report Template](docs/assignments/sentence_starter_template.md)
 - ⚙️ [Lab Setup & Troubleshooting Guide](lab/SETUP_GUIDE.md)
 
