@@ -38,6 +38,7 @@ import requests
 
 import filter_rules
 from benchmark import check_egress, check_ingress, run_benchmark
+from policy_eval import evaluate as evaluate_policy, load_policy
 from report_signing import sign_report
 
 try:
@@ -299,7 +300,7 @@ def save_opa_rules_to_disk(json_str):
         formatted = json.dumps(parsed, indent=2)
         with open(RULES_JSON_PATH, "w", encoding="utf-8") as f:
             f.write(formatted)
-        return True, "Phase 3 policies/rules.json successfully saved and applied to OPA."
+        return True, "Phase 3 policies/rules.json saved and applied " + ("to the OPA engine." if OPA_ENABLED else "via the local policy evaluator (OPA engine offline).")
     except Exception as e:
         return False, f"Write error: {e}"
 
@@ -832,48 +833,44 @@ def evaluate_defense_pipeline(prompt, persona="grizzdog", variant="vulnerable", 
     context_data = None
     if protection_mode == "opa-context":
         context_data = classify_context(prompt)
+        note = ""
         if OPA_ENABLED:
+            layer = "OPA Policy Engine"
             decision = opa_decision(stage="ingress", model=model_target, prompt_text=prompt, response_text="", context=context_data)
-            if not decision.get("allow", False):
-                opa_hit = True
-                pipeline.append({
-                    "id": "nodeP3Opa",
-                    "name": "3. Phase 3 OPA",
-                    "layer": "Policy Engine",
-                    "status": "blocked",
-                    "badge": "BLOCKED ⛔",
-                    "detail": decision.get("reason", "OPA policy denied request"),
-                })
-            else:
-                pipeline.append({
-                    "id": "nodeP3Opa",
-                    "name": "3. Phase 3 OPA",
-                    "layer": "Policy Engine",
-                    "status": "passed",
-                    "badge": "PASSED ✓",
-                    "detail": f"Domain: {context_data.get('domain')} (Allowed)",
-                })
         else:
-            p_low = prompt.lower()
-            if any(x in p_low for x in ["roster", "ferpa", "override_quadruped", "disarm", "dean of academic affairs"]):
-                opa_hit = True
-                pipeline.append({
-                    "id": "nodeP3Opa",
-                    "name": "3. Phase 3 OPA",
-                    "layer": "Policy Engine",
-                    "status": "blocked",
-                    "badge": "BLOCKED ⛔",
-                    "detail": "High-risk domain detected without authorized role badge",
-                })
+            # No OPA server (native setups): evaluate the same rules.json with
+            # the Python port of gateway.rego so student edits still apply.
+            layer = "Local Policy Evaluator (OPA engine offline)"
+            policy, err = load_policy(RULES_JSON_PATH)
+            classifier_ok = "classifier_error" not in (context_data.get("risk_flags") or [])
+            if policy is None:
+                decision = {"allow": False, "action": "block_ingress", "reason": f"{err} (fail-closed)", "matched": []}
             else:
-                pipeline.append({
-                    "id": "nodeP3Opa",
-                    "name": "3. Phase 3 OPA",
-                    "layer": "Policy Engine",
-                    "status": "passed",
-                    "badge": "PASSED ✓",
-                    "detail": "Domain: academic/campus navigation (Approved)",
-                })
+                decision = evaluate_policy(policy, "ingress", prompt, "", context_data if classifier_ok else None)
+            if not classifier_ok:
+                note = " · classifier offline: only rules.json blacklist applied"
+        opa_hit = not decision.get("allow", False)
+        if opa_hit:
+            matched = decision.get("matched") or []
+            pipeline.append({
+                "id": "nodeP3Opa",
+                "name": "3. Phase 3 Policy",
+                "layer": layer,
+                "status": "blocked",
+                "badge": "BLOCKED ⛔",
+                "detail": decision.get("reason", "policy denied request")
+                          + (f": {', '.join(map(str, matched[:3]))}" if matched and matched[0] not in ("context_policy", "context_threshold") else "")
+                          + note,
+            })
+        else:
+            pipeline.append({
+                "id": "nodeP3Opa",
+                "name": "3. Phase 3 Policy",
+                "layer": layer,
+                "status": "passed",
+                "badge": "PASSED ✓",
+                "detail": f"Domain: {context_data.get('domain')}, intent: {context_data.get('intent')} (Allowed){note}",
+            })
     else:
         pipeline.append({
             "id": "nodeP3Opa",
@@ -881,7 +878,7 @@ def evaluate_defense_pipeline(prompt, persona="grizzdog", variant="vulnerable", 
             "layer": "Policy Engine",
             "status": "skipped",
             "badge": "SKIPPED ⏭️",
-            "detail": "OPA disabled in architecture",
+            "detail": "Phase 3 not selected in architecture",
         })
         
     if opa_hit:
@@ -891,7 +888,7 @@ def evaluate_defense_pipeline(prompt, persona="grizzdog", variant="vulnerable", 
             "layer": "Neural Brain",
             "status": "skipped",
             "badge": "SKIPPED ⏭️",
-            "detail": "OPA policy halted pipeline",
+            "detail": "Phase 3 policy halted pipeline",
         })
         pipeline.append({
             "id": "nodeP2Out",
@@ -907,7 +904,7 @@ def evaluate_defense_pipeline(prompt, persona="grizzdog", variant="vulnerable", 
             "layer": "Gateway Decision",
             "status": "blocked",
             "badge": "INTERCEPTED 🛡️",
-            "detail": "Blocked by Phase 3 OPA Policy",
+            "detail": "Blocked by Phase 3 Policy",
         })
         event = {
             "timestamp": datetime.now(timezone.utc).isoformat(),
@@ -924,7 +921,7 @@ def evaluate_defense_pipeline(prompt, persona="grizzdog", variant="vulnerable", 
             "status": "blocked",
             "breached": False,
             "defended": True,
-            "message": "🛡️ [BUTLER GRIZZDOG INTERCEPT] Blocked by Phase 3 OPA Policy Engine.",
+            "message": "🛡️ [BUTLER GRIZZDOG INTERCEPT] Blocked by Phase 3 Policy" + (" (OPA engine)." if OPA_ENABLED else " (local evaluator; OPA engine offline)."),
             "response": None,
             "thinking": None,
             "context": context_data,
@@ -3430,7 +3427,7 @@ PAGE = """
             💡 <strong>Real-World Analogy:</strong> Phase 3 is like the school administration's official hall pass policy. Even if a message passes the backpack check, the OPA engine checks the student's ID badge, authorized hallway, and risk score. If an unapproved user tries to unlock the school chemistry stockroom, OPA denies access instantly!
           </div>
           <div class="banner-meta" style="margin-top:.6rem;">
-            Target File: <code>policies/rules.json</code> &bull; OPA Engine: <strong>Watching /policies filesystem</strong>
+            Target File: <code>policies/rules.json</code> &bull; {% if opa_enabled %}OPA Engine: <strong>Watching /policies filesystem</strong>{% else %}Evaluator: <strong>Local Python port of gateway.rego (OPA engine offline)</strong>{% endif %}
           </div>
         </div>
 
@@ -5142,6 +5139,7 @@ def index():
         current_system_prompt=current_system_prompt,
         current_filter_rules=current_filter_rules,
         current_opa_rules=current_opa_rules,
+        opa_enabled=OPA_ENABLED,
         result=result,
         examples=EXAMPLE_PROMPTS,
         log=recent_log,
@@ -5259,10 +5257,10 @@ def api_opa_rules():
 @app.route("/api/opa_rules/preset", methods=["POST"])
 def api_opa_rules_preset():
     payload = request.get_json(force=True, silent=True) or {}
-    preset_name = payload.get("preset", "calibrated")
-    preset_file = os.path.join(POLICIES_DIR, f"rules_{preset_name}.json")
-    if not os.path.exists(preset_file):
-        preset_file = os.path.join(POLICIES_DIR, "rules_calibrated.json")
+    preset_name = "calibrated"  # the only Phase 3 preset
+    # Kept outside policies/: OPA loads every JSON there into one data tree,
+    # and a second top-level "policy" key makes it refuse to start.
+    preset_file = os.path.join(PRESETS_DIR, "opa_rules_calibrated.json")
     if not os.path.exists(preset_file):
         return jsonify({"status": "error", "error": "Calibrated OPA rules preset not found"}), 404
     code = read_file_safely(preset_file)
@@ -5274,7 +5272,7 @@ def api_opa_rules_preset():
         "status": "ok",
         "preset": preset_name,
         "code": formatted,
-        "message": "Phase 3 rules.json reset to calibrated baseline and applied to OPA.",
+        "message": "Phase 3 rules.json reset to calibrated baseline and applied " + ("to the OPA engine." if OPA_ENABLED else "via the local policy evaluator (OPA engine offline)."),
     })
 
 

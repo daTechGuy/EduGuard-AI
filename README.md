@@ -141,7 +141,7 @@ EduGuard-AI features a live, in-browser **3-Phase Defense Architecture Studio** 
 | :--- | :--- | :--- | :--- |
 | 🟣 **Phase 1** | **Model Hardening** | `lab/modelfiles/*.txt` | Edit neural system prompts across all 4 hardening tiers (Level 1 Ultra-Vulnerable to Level 4 Paranoid). Hot-reloads in-memory and saves to disk; one-click runtime rebuild in Ollama. |
 | 🟡 **Phase 2** | **Static Gateway Rules** | `lab/scripts/filter_rules.py` | Edit Python-based `INGRESS_BLACKLIST`, `EGRESS_SECRETS`, and `EGRESS_PATTERNS`. Automated Python AST syntax verification before saving to prevent crashes. One-click presets: *Calibrated Benchmark (100% visible / 0% held-out)*, *Scaffolded (Starter)*, and *Blank*. |
-| 🔵 **Phase 3** | **OPA Policy Engine** | `policies/rules.json` | Edit Open Policy Agent declarative rules: allowed/blocked domains & intents, confidence thresholds (`0.8` allow, `0.55` clarify), and high-risk flags. Automated JSON linting, formatting, and live sync with OPA watcher. |
+| 🔵 **Phase 3** | **OPA Policy Engine** | `policies/rules.json` | Edit Open Policy Agent declarative rules: allowed/blocked domains & intents, confidence thresholds (`0.8` allow, `0.55` clarify), and high-risk flags. Automated JSON linting, formatting, and live sync with OPA watcher. Native (no-Docker) setups use `lab/scripts/policy_eval.py`, a Python port of `gateway.rego` that reads the same `rules.json`, and the pipeline labels it "Local Policy Evaluator (OPA engine offline)". |
 
 ### Visual Phase Identification & Dynamic Synchronization
 - **Color-Coded Phase Tab Bar**: Segmented tabs styled in **Butler Purple (Phase 1)**, **Butler Gold (Phase 2)**, and **Cyber Blue (Phase 3)** with individual status banners and file badges.

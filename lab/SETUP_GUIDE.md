@@ -372,6 +372,8 @@ If your Docker Desktop is outdated:
 | Model pull is slow or times out | Campus firewall or slow Wi-Fi. Pre-pull on home connection or mobile hotspot. |
 | Modified system prompt not showing | Click **Save & Apply** in the UI editor or refresh the page. |
 | OPA policy blocks unexpected queries | Review `policies/rules.json` confidence thresholds and ensure allowed intents cover your query. |
+| Phase 3 node says "Local Policy Evaluator (OPA engine offline)" | Normal on native Windows/Mac setups: the gateway evaluates `rules.json` with a Python port of `gateway.rego`, so your edits still apply. If it also says "classifier offline", Ollama isn't reachable and only the `rules.json` blacklist is checked. To use real OPA natively, run `opa run --server --watch .` inside `policies/` and start the gateway with `OPA_ENABLED=true OPA_URL=http://localhost:8181/v1/data/gateway/decision`. |
+| Every Phase 3 request blocked with "OPA unavailable" (Docker) | Check `docker compose logs opa`. OPA loads every `.json` in `policies/` into one data tree, so keep extra copies of `rules.json` (backups, presets) **outside** that folder or OPA will refuse to start with a merge error. |
 | Docker daemon not running | Ensure Docker Desktop is launched and running in the system tray before running commands. |
 
 ---
