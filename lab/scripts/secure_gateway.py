@@ -3653,6 +3653,22 @@ PAGE = """
   </table>
 
   <script>
+    // -----------------------------------------------------------------
+    // Output encoding (OWASP LLM02 / Insecure Output Handling)
+    // Model replies, attacker prompts, and student-entered text are
+    // UNTRUSTED. Anything interpolated into an innerHTML template must go
+    // through esc() so that a reply like <img src=x onerror=...> renders
+    // as text instead of running as code.
+    // -----------------------------------------------------------------
+    function esc(value) {
+      return String(value ?? '')
+        .replace(/&/g, '&amp;')
+        .replace(/</g, '&lt;')
+        .replace(/>/g, '&gt;')
+        .replace(/"/g, '&quot;')
+        .replace(/'/g, '&#39;');
+    }
+
     document.addEventListener('click', function (event) {
       const link = event.target.closest('a[data-prompt]');
       if (!link) return;
@@ -3731,10 +3747,10 @@ PAGE = """
 
         if (!title && !desc) return;
 
-        tipTitle.innerHTML = title || 'Cyber Concept';
-        tipDesc.innerHTML = desc || '';
+        tipTitle.textContent = title || 'Cyber Concept';
+        tipDesc.textContent = desc || '';
         if (analogy) {
-          tipAnalogy.innerHTML = analogy;
+          tipAnalogy.textContent = analogy;
           tipAnalogy.style.display = 'block';
         } else {
           tipAnalogy.style.display = 'none';
@@ -4099,10 +4115,10 @@ PAGE = """
         const row = document.createElement('tr');
         const badgeClass = item.status === 'PASS' ? 'b-allow' : 'b-block';
         row.innerHTML = `
-          <td><strong>${item.category}</strong></td>
-          <td><code>${item.type}</code></td>
-          <td><span class="badge ${badgeClass}">${item.status}</span></td>
-          <td><code>${item.action}</code></td>
+          <td><strong>${esc(item.category)}</strong></td>
+          <td><code>${esc(item.type)}</code></td>
+          <td><span class="badge ${badgeClass}">${esc(item.status)}</span></td>
+          <td><code>${esc(item.action)}</code></td>
         `;
         tbody.appendChild(row);
       });
@@ -4238,9 +4254,9 @@ PAGE = """
             <div style="margin-bottom:.5rem; color:#e2e8f0;">
               You successfully executed a prompt injection attack on the sentry!
             </div>
-            ${data.breach_reason ? `<div style="margin-bottom:.5rem; color:#fcd34d; font-weight:700;">🔑 ${data.breach_reason}</div>` : ''}
-            ${data.flag ? `<div style="background:rgba(16,185,129,0.25); border:1px solid #10b981; padding:.4rem .8rem; border-radius:4px; font-weight:800; color:#6ee7b7; margin-bottom:.5rem;">🏆 CAPTURED FLAG: ${data.flag}</div>` : ''}
-            <div style="font-size:.84rem; color:#cbd5e1; white-space:pre-wrap;">${data.response || data.message}</div>
+            ${data.breach_reason ? `<div style="margin-bottom:.5rem; color:#fcd34d; font-weight:700;">🔑 ${esc(data.breach_reason)}</div>` : ''}
+            ${data.flag ? `<div style="background:rgba(16,185,129,0.25); border:1px solid #10b981; padding:.4rem .8rem; border-radius:4px; font-weight:800; color:#6ee7b7; margin-bottom:.5rem;">🏆 CAPTURED FLAG: ${esc(data.flag)}</div>` : ''}
+            <div style="font-size:.84rem; color:#cbd5e1; white-space:pre-wrap;">${esc(data.response || data.message)}</div>
           `;
 
           // Update stage badge
@@ -4273,7 +4289,7 @@ PAGE = """
             <div style="margin-bottom:.5rem; color:#fecdd3;">
               The Butler multi-phase defense shield neutralized your attack payload!
             </div>
-            <div style="font-size:.84rem; color:#cbd5e1; white-space:pre-wrap;">${data.message || 'Sentry rejected unauthorized command.'}</div>
+            <div style="font-size:.84rem; color:#cbd5e1; white-space:pre-wrap;">${esc(data.message || data.response || 'Sentry rejected unauthorized command.')}</div>
           `;
         }
 
@@ -4506,10 +4522,10 @@ PAGE = """
         const pass = (d.status === 'PASS');
         rowsHtml += `
           <tr>
-            <td><strong>${d.category}</strong></td>
-            <td><code>${d.type}</code></td>
-            <td style="color:${pass ? '#059669' : '#dc2626'}; font-weight:800;">[${d.status}]</td>
-            <td><small>${d.action}</small></td>
+            <td><strong>${esc(d.category)}</strong></td>
+            <td><code>${esc(d.type)}</code></td>
+            <td style="color:${pass ? '#059669' : '#dc2626'}; font-weight:800;">[${esc(d.status)}]</td>
+            <td><small>${esc(d.action)}</small></td>
           </tr>
         `;
       });
@@ -4518,7 +4534,7 @@ PAGE = """
       if (data.arena && (data.arena.rounds > 0 || data.arena.red_score > 0 || data.arena.blue_score > 0)) {
         arenaHtml = `
           <h3 style="color:#280b33; margin-top:1.5rem;">5. Red Team vs Blue Team Head-to-Head Arena Record</h3>
-          <p><strong>Red Team Attacker:</strong> ${data.arena.red_player} (${data.arena.red_score} pts) &bull; <strong>Blue Team Defender:</strong> ${data.arena.blue_player} (${data.arena.blue_score} pts) &bull; <strong>Rounds Contested:</strong> ${data.arena.rounds}</p>
+          <p><strong>Red Team Attacker:</strong> ${esc(data.arena.red_player)} (${esc(data.arena.red_score)} pts) &bull; <strong>Blue Team Defender:</strong> ${esc(data.arena.blue_player)} (${esc(data.arena.blue_score)} pts) &bull; <strong>Rounds Contested:</strong> ${esc(data.arena.rounds)}</p>
         `;
       }
 
@@ -4531,22 +4547,22 @@ PAGE = """
           </div>
           <div style="text-align:right;">
             <div style="background:#ffc72c; color:#090412; font-weight:900; padding:4px 10px; border-radius:4px; font-size:.82rem; display:inline-block;">VERIFIED SUBMISSION</div>
-            <div style="font-family:monospace; font-size:.75rem; color:#4b5563; margin-top:4px;">HASH: ${data.verification_hash}</div>
+            <div style="font-family:monospace; font-size:.75rem; color:#4b5563; margin-top:4px;">HASH: ${esc(data.verification_hash)}</div>
           </div>
         </div>
 
         <table style="width:100%; border:1px solid #e5e7eb; margin-bottom:1.25rem;">
           <tr style="background:#f9fafb;">
             <td style="padding:.5rem; width:25%;"><strong>Student Name:</strong></td>
-            <td style="padding:.5rem; width:25%;">${data.student_name}</td>
+            <td style="padding:.5rem; width:25%;">${esc(data.student_name)}</td>
             <td style="padding:.5rem; width:25%;"><strong>Student Email/ID:</strong></td>
-            <td style="padding:.5rem; width:25%;">${data.student_email}</td>
+            <td style="padding:.5rem; width:25%;">${esc(data.student_email)}</td>
           </tr>
           <tr>
             <td style="padding:.5rem;"><strong>Course / Section:</strong></td>
-            <td style="padding:.5rem;">${data.course_section}</td>
+            <td style="padding:.5rem;">${esc(data.course_section)}</td>
             <td style="padding:.5rem;"><strong>Submission Date:</strong></td>
-            <td style="padding:.5rem;">${data.timestamp}</td>
+            <td style="padding:.5rem;">${esc(data.timestamp)}</td>
           </tr>
         </table>
 
@@ -4606,23 +4622,23 @@ PAGE = """
         <h3 style="color:#280b33; margin-top:1.5rem;">4. Student Defense Brief & Reflection Analysis</h3>
         <div style="margin-bottom:.85rem;">
           <strong>1) Attack Attempt & Prompt Technique:</strong>
-          <blockquote>${ref.r1}</blockquote>
+          <blockquote>${esc(ref.r1)}</blockquote>
         </div>
         <div style="margin-bottom:.85rem;">
           <strong>2) Baseline vs Hardened Prompt Behavior:</strong>
-          <blockquote>${ref.r2}</blockquote>
+          <blockquote>${esc(ref.r2)}</blockquote>
         </div>
         <div style="margin-bottom:.85rem;">
           <strong>3) Gateway Filter Mechanism (Caught or Missed):</strong>
-          <blockquote>${ref.r3}</blockquote>
+          <blockquote>${esc(ref.r3)}</blockquote>
         </div>
         <div style="margin-bottom:.85rem;">
           <strong>4) Why Layered Gateway Defense Is Necessary Beyond System Prompts:</strong>
-          <blockquote>${ref.r4}</blockquote>
+          <blockquote>${esc(ref.r4)}</blockquote>
         </div>
         <div style="margin-bottom:.85rem;">
           <strong>5) Usability vs Security Trade-offs & Residual Risk:</strong>
-          <blockquote>${ref.r5}</blockquote>
+          <blockquote>${esc(ref.r5)}</blockquote>
         </div>
 
         ${arenaHtml}
@@ -4631,7 +4647,7 @@ PAGE = """
           <p><strong>Academic Integrity Pledge:</strong> I certify that the work presented in this lab report was conducted by me as part of the hands-on cybersecurity curriculum at Butler Community College.</p>
           <div style="margin-top:1.5rem; display:flex; justify-content:space-between;">
             <div>Student Signature: _____________________________________</div>
-            <div>Date: ${data.timestamp ? data.timestamp.split(' ')[0] : ''}</div>
+            <div>Date: ${esc(data.timestamp ? data.timestamp.split(' ')[0] : '')}</div>
           </div>
         </div>
       `;
@@ -4771,10 +4787,10 @@ PAGE = """
                 ⚔️ RED TEAM SCORES +10 PTS! (EXPLOIT SUCCESSFUL)
               </div>
               <div style="color:#e2e8f0; font-size:.85rem; margin-bottom:.35rem;">
-                ${data.breach_reason || 'Target Sentry leaked secret or complied with unauthorized directive!'}
+                ${esc(data.breach_reason || 'Target Sentry leaked secret or complied with unauthorized directive!')}
               </div>
-              ${data.flag ? `<div style="background:rgba(16,185,129,0.25); border:1px solid #10b981; padding:.3rem .6rem; border-radius:4px; font-weight:800; color:#6ee7b7; margin-bottom:.35rem;">🏆 EXFILTRATED ASSET: ${data.flag}</div>` : ''}
-              <div style="font-size:.82rem; color:#cbd5e1; white-space:pre-wrap;">${data.response || data.message}</div>
+              ${data.flag ? `<div style="background:rgba(16,185,129,0.25); border:1px solid #10b981; padding:.3rem .6rem; border-radius:4px; font-weight:800; color:#6ee7b7; margin-bottom:.35rem;">🏆 EXFILTRATED ASSET: ${esc(data.flag)}</div>` : ''}
+              <div style="font-size:.82rem; color:#cbd5e1; white-space:pre-wrap;">${esc(data.response || data.message)}</div>
             `;
           } else {
             resBox.className = 'booth-result-card defended';
@@ -4783,9 +4799,9 @@ PAGE = """
                 🛡️ BLUE TEAM SCORES +10 PTS! (ATTACK INTERCEPTED)
               </div>
               <div style="color:#bfdbfe; font-size:.85rem; margin-bottom:.35rem;">
-                Shield intercepted payload at perimeter (${data.verdict || 'BLOCKED'})!
+                Shield intercepted payload at perimeter (${esc(data.verdict || 'BLOCKED')})!
               </div>
-              <div style="font-size:.82rem; color:#cbd5e1; white-space:pre-wrap;">${data.message || 'Sentry rejected unauthorized input.'}</div>
+              <div style="font-size:.82rem; color:#cbd5e1; white-space:pre-wrap;">${esc(data.message || data.response || 'Sentry rejected unauthorized input.')}</div>
             `;
           }
         }
@@ -4796,9 +4812,9 @@ PAGE = """
           const row = document.createElement('tr');
           row.innerHTML = `
             <td>Round ${arenaState.rounds}</td>
-            <td><strong>${persona.toUpperCase()}</strong> (${variant})</td>
-            <td style="max-width:200px; overflow:hidden; text-overflow:ellipsis; white-space:nowrap;"><code>${prompt}</code></td>
-            <td style="color:${data.breached ? '#34d399' : '#60a5fa'}; font-weight:800;">${data.outcome}</td>
+            <td><strong>${esc(persona.toUpperCase())}</strong> (${esc(variant)})</td>
+            <td style="max-width:200px; overflow:hidden; text-overflow:ellipsis; white-space:nowrap;"><code>${esc(prompt)}</code></td>
+            <td style="color:${data.breached ? '#34d399' : '#60a5fa'}; font-weight:800;">${esc(data.outcome)}</td>
             <td>${data.breached ? `<span style="color:#f87171;">Red +10</span>` : `<span style="color:#60a5fa;">Blue +10</span>`}</td>
           `;
           tbody.prepend(row);
